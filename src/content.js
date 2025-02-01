@@ -1,71 +1,110 @@
 function calculateTotalTime() {
   const events = document.querySelectorAll('[data-eventchip]');
-  let totalMinutes = 0;
+  const colorTotals = new Map();
 
   events.forEach(event => {
-    // Look for the time div with class gVNoLb
     const timeElement = event.querySelector('.gVNoLb');
     if (!timeElement) return;
 
     const timeText = timeElement.textContent;
-    console.log('Found event time:', timeText); // Debug log
-
-    // Handle time formats like "09:00 – 10:00"
     const timeMatch = timeText.match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/);
 
     if (timeMatch) {
       const [_, startHour, startMin, endHour, endMin] = timeMatch;
-
       const start = convertToMinutes(startHour, startMin);
       const end = convertToMinutes(endHour, endMin);
 
       if (end > start) {
-        totalMinutes += end - start;
+        const duration = end - start;
+        // Get the background color from the event div
+        const backgroundColor = event.style.backgroundColor || 'rgb(3, 155, 229)'; // Default blue
+
+        // Add to color total
+        const current = colorTotals.get(backgroundColor) || 0;
+        colorTotals.set(backgroundColor, current + duration);
       }
-      console.log(`Event duration: ${end - start} minutes`); // Debug log
     }
   });
 
-  displayTotal(totalMinutes);
+  displayTotal(colorTotals);
 }
 
 function convertToMinutes(hour, minutes) {
   return parseInt(hour) * 60 + parseInt(minutes);
 }
 
-function displayTotal(totalMinutes) {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+function formatDuration(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}h ${mins}m`;
+}
 
+function displayTotal(colorTotals) {
   let totalDisplay = document.getElementById('calendar-time-total');
+  const displayId = 'calendar-time-total';
+
+  // Skip if we're already updating this element to avoid infinite loops
+  if (document.getElementById(displayId)?.dataset.updating === 'true') {
+    return;
+  }
+
   if (!totalDisplay) {
     totalDisplay = document.createElement('div');
-    totalDisplay.id = 'calendar-time-total';
+    totalDisplay.id = displayId;
     totalDisplay.style.cssText = `
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: #1a73e8;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 4px;
+      background: white;
+      color: #333;
+      padding: 12px;
+      border-radius: 8px;
       z-index: 9999;
       font-family: 'Google Sans',Roboto,Arial,sans-serif;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     `;
     document.body.appendChild(totalDisplay);
   }
 
-  totalDisplay.textContent = `Total Time: ${hours}h ${minutes}m`;
+  // Mark that we're updating
+  totalDisplay.dataset.updating = 'true';
+
+  // Calculate grand total
+  const grandTotal = Array.from(colorTotals.values()).reduce((sum, curr) => sum + curr, 0);
+
+  // Create the HTML content
+  let content = `<div style="font-weight: bold; margin-bottom: 8px">Total Time: ${formatDuration(grandTotal)}</div>`;
+
+  colorTotals.forEach((minutes, color) => {
+    content += `
+      <div style="display: flex; align-items: center; margin: 4px 0;">
+        <div style="width: 12px; height: 12px; background: ${color}; margin-right: 8px; border-radius: 2px;"></div>
+        <div>${formatDuration(minutes)}</div>
+      </div>
+    `;
+  });
+
+  totalDisplay.innerHTML = content;
+
+  // Clear the updating flag
+  setTimeout(() => {
+    totalDisplay.dataset.updating = 'false';
+  }, 0);
 }
 
-// Wait for the calendar to fully load
 function init() {
   // Initial calculation
   calculateTotalTime();
 
-  // Recalculate when view changes
+  // Recalculate when view changes, but ignore mutations to our display
   const observer = new MutationObserver((mutations) => {
-    calculateTotalTime();
+    const relevantChange = mutations.some(mutation => {
+      return !mutation.target.id?.includes('calendar-time-total');
+    });
+
+    if (relevantChange) {
+      calculateTotalTime();
+    }
   });
 
   observer.observe(document.body, {
