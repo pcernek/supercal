@@ -8,15 +8,10 @@
     "48": "icon48.png",
     "128": "icon128.png"
   },
-  "permissions": ["activeTab"],
-  "host_permissions": ["https://calendar.google.com/*"],
-  "background": {
-    "service_worker": "background.js"
-  },
   "content_scripts": [
     {
       "matches": ["https://calendar.google.com/*"],
       "js": ["content.js"]
     }
   ]
-} 
+}
