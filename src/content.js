@@ -1,37 +1,36 @@
 function calculateTotalTime() {
-  const events = document.querySelectorAll('[role="gridcell"] [role="button"]');
+  const events = document.querySelectorAll('[data-eventchip]');
   let totalMinutes = 0;
 
   events.forEach(event => {
-    const timeElement = event.querySelector('[data-text-as-pseudo-element]');
+    // Look for the time div with class gVNoLb
+    const timeElement = event.querySelector('.gVNoLb');
     if (!timeElement) return;
 
-    const timeText = timeElement.getAttribute('data-text-as-pseudo-element');
-    const timeMatch = timeText.match(/(\d{1,2}):(\d{2})\s*(am|pm)?\s*[-–]\s*(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+    const timeText = timeElement.textContent;
+    console.log('Found event time:', timeText); // Debug log
+
+    // Handle time formats like "09:00 – 10:00"
+    const timeMatch = timeText.match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/);
 
     if (timeMatch) {
-      const [_, startHour, startMin, startMeridiem, endHour, endMin, endMeridiem] = timeMatch;
+      const [_, startHour, startMin, endHour, endMin] = timeMatch;
 
-      const start = convertToMinutes(startHour, startMin, startMeridiem);
-      const end = convertToMinutes(endHour, endMin, endMeridiem);
+      const start = convertToMinutes(startHour, startMin);
+      const end = convertToMinutes(endHour, endMin);
 
-      totalMinutes += end - start;
+      if (end > start) {
+        totalMinutes += end - start;
+      }
+      console.log(`Event duration: ${end - start} minutes`); // Debug log
     }
   });
 
   displayTotal(totalMinutes);
 }
 
-function convertToMinutes(hour, minutes, meridiem) {
-  hour = parseInt(hour);
-  minutes = parseInt(minutes);
-
-  if (meridiem) {
-    if (meridiem.toLowerCase() === 'pm' && hour !== 12) hour += 12;
-    if (meridiem.toLowerCase() === 'am' && hour === 12) hour = 0;
-  }
-
-  return hour * 60 + minutes;
+function convertToMinutes(hour, minutes) {
+  return parseInt(hour) * 60 + parseInt(minutes);
 }
 
 function displayTotal(totalMinutes) {
@@ -44,7 +43,7 @@ function displayTotal(totalMinutes) {
     totalDisplay.id = 'calendar-time-total';
     totalDisplay.style.cssText = `
       position: fixed;
-      top: 20px;
+      bottom: 20px;
       right: 20px;
       background: #1a73e8;
       color: white;
@@ -59,15 +58,25 @@ function displayTotal(totalMinutes) {
   totalDisplay.textContent = `Total Time: ${hours}h ${minutes}m`;
 }
 
-// Initial calculation
-calculateTotalTime();
-
-// Recalculate when view changes
-const observer = new MutationObserver(() => {
+// Wait for the calendar to fully load
+function init() {
+  // Initial calculation
   calculateTotalTime();
-});
 
-observer.observe(document.body, {
-  childList: true,
-  subtree: true
-}); 
+  // Recalculate when view changes
+  const observer = new MutationObserver((mutations) => {
+    calculateTotalTime();
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
+
+// Make sure the page is loaded before running
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+} 
