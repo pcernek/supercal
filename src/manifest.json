@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Calendar Time Calculator",
+  "name": "Supercal",
   "version": "1.0",
   "description": "Calculates total scheduled time in Google Calendar",
   "permissions": ["activeTab"],
   "host_permissions": ["https://calendar.google.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://calendar.google.com/*"],
