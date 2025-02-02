@@ -1,4 +1,4 @@
-# supercal 🦸📆🌈
+# <img src="assets/icons/icon48.png" width="24" alt="Supercal icon" style="vertical-align: middle"> supercal 🦸📆🌈
 
 A Google Chrome extension that augments Google Calendar.
 
