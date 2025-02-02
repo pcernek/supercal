@@ -104,7 +104,14 @@ function displayTotal(colorTotals) {
       align-items: center;
       user-select: none;
     ">
-      <div style="font-weight: bold;">Supercal</div>
+      <div style="display: flex; align-items: center;">
+        <img src="${chrome.runtime.getURL('icon48.png')}" 
+             width="16" 
+             height="16" 
+             style="margin-right: 8px;"
+        >
+        <div style="font-weight: bold;">Supercal</div>
+      </div>
       <div class="collapse-toggle" style="
         cursor: pointer;
         padding: 4px;

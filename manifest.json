@@ -8,6 +8,10 @@
     "48": "icon48.png",
     "128": "icon128.png"
   },
+  "web_accessible_resources": [{
+    "resources": ["icon48.png"],
+    "matches": ["https://calendar.google.com/*"]
+  }],
   "content_scripts": [
     {
       "matches": ["https://calendar.google.com/*"],
