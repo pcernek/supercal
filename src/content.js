@@ -34,9 +34,9 @@ function convertToMinutes(hour, minutes) {
 }
 
 function formatDuration(minutes) {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}h ${mins}m`;
+  const hours = minutes / 60;
+  const formattedHours = hours % 1 === 0 ? Math.floor(hours) : hours.toFixed(1);
+  return `${formattedHours} h`;
 }
 
 function displayTotal(colorTotals) {
@@ -114,7 +114,7 @@ function displayTotal(colorTotals) {
       user-select: text;
     ">
       <div style="display: flex; align-items: center; margin-bottom: 8px;">
-        <div style="font-weight: 500; margin-right: 8px;">Total Time:</div>
+        <div style="font-weight: 500; margin-right: 8px;">Total:</div>
         <div style="font-weight: bold;">${formatDuration(grandTotal)}</div>
       </div>
   `;
