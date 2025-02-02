@@ -68,7 +68,6 @@ function displayTotal(colorTotals) {
       font-family: 'Google Sans',Roboto,Arial,sans-serif;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       cursor: default;
-      user-select: none;
       min-width: 200px;
       width: max-content;
     `;
@@ -96,6 +95,7 @@ function displayTotal(colorTotals) {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      user-select: none;
     ">
       <div style="font-weight: bold;">Supercal</div>
       <div class="collapse-toggle" style="
@@ -111,6 +111,7 @@ function displayTotal(colorTotals) {
     <div class="card-body" style="
       padding: 12px;
       display: ${totalDisplay?.dataset.collapsed === 'true' ? 'none' : 'block'};
+      user-select: text;
     ">
       <div style="display: flex; align-items: center; margin-bottom: 8px;">
         <div style="font-weight: 500; margin-right: 8px;">Total Time:</div>
