@@ -52,14 +52,15 @@ function displayTotal(colorTotals) {
     totalDisplay = document.createElement('div');
     totalDisplay.id = displayId;
 
-    // Calculate initial position at bottom right
-    const initialTop = window.innerHeight - 200; // Approximate initial height
-    const initialLeft = window.innerWidth - 220; // Account for width + margin
+    // Get saved position or use default
+    const savedState = JSON.parse(localStorage.getItem('supercal_state') || '{}');
+    const defaultTop = window.innerHeight - 200;
+    const defaultLeft = window.innerWidth - 220;
 
     totalDisplay.style.cssText = `
       position: fixed;
-      top: ${initialTop}px;
-      left: ${initialLeft}px;
+      top: ${savedState.top || defaultTop}px;
+      left: ${savedState.left || defaultLeft}px;
       background: white;
       color: #333;
       padding: 0;
@@ -71,6 +72,12 @@ function displayTotal(colorTotals) {
       min-width: 200px;
       width: max-content;
     `;
+
+    // Restore collapsed state
+    if (savedState.collapsed) {
+      totalDisplay.dataset.collapsed = 'true';
+    }
+
     document.body.appendChild(totalDisplay);
 
     // Add drag functionality
@@ -140,6 +147,11 @@ function displayTotal(colorTotals) {
     const body = totalDisplay.querySelector('.card-body');
     body.style.display = !isCollapsed ? 'none' : 'block';
     toggle.textContent = !isCollapsed ? '▼' : '▲';
+
+    // Save collapsed state
+    const state = JSON.parse(localStorage.getItem('supercal_state') || '{}');
+    state.collapsed = !isCollapsed;
+    localStorage.setItem('supercal_state', JSON.stringify(state));
   });
 
   // Clear the updating flag
@@ -210,6 +222,12 @@ function makeDraggable(element) {
       if (handle) {
         handle.style.cursor = 'grab';
       }
+
+      // Save position
+      const state = JSON.parse(localStorage.getItem('supercal_state') || '{}');
+      state.top = currentY;
+      state.left = currentX;
+      localStorage.setItem('supercal_state', JSON.stringify(state));
     }
   }
 }
