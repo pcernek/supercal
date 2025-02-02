@@ -57,13 +57,18 @@ function displayTotal(colorTotals) {
       right: 20px;
       background: white;
       color: #333;
-      padding: 12px;
+      padding: 0;
       border-radius: 8px;
       z-index: 9999;
       font-family: 'Google Sans',Roboto,Arial,sans-serif;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      cursor: default;
+      user-select: none;
     `;
     document.body.appendChild(totalDisplay);
+
+    // Add drag functionality
+    makeDraggable(totalDisplay);
   }
 
   // Mark that we're updating
@@ -72,8 +77,24 @@ function displayTotal(colorTotals) {
   // Calculate grand total
   const grandTotal = Array.from(colorTotals.values()).reduce((sum, curr) => sum + curr, 0);
 
-  // Create the HTML content
-  let content = `<div style="font-weight: bold; margin-bottom: 8px">Total Time: ${formatDuration(grandTotal)}</div>`;
+  // Create the HTML content with a handle
+  let content = `
+    <div class="drag-handle" style="
+      padding: 8px 12px;
+      background: #f1f3f4;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      cursor: grab;
+      border-bottom: 1px solid #dadce0;
+    ">
+      <div style="font-weight: bold;">Supercal</div>
+    </div>
+    <div style="padding: 12px;">
+      <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <div style="font-weight: 500; margin-right: 8px;">Total Time:</div>
+        <div style="font-weight: bold;">${formatDuration(grandTotal)}</div>
+      </div>
+  `;
 
   colorTotals.forEach((minutes, color) => {
     content += `
@@ -84,12 +105,79 @@ function displayTotal(colorTotals) {
     `;
   });
 
+  content += '</div>';
   totalDisplay.innerHTML = content;
 
   // Clear the updating flag
   setTimeout(() => {
     totalDisplay.dataset.updating = 'false';
   }, 0);
+}
+
+function makeDraggable(element) {
+  let isDragging = false;
+  let currentX;
+  let currentY;
+  let initialX;
+  let initialY;
+  let xOffset = 0;
+  let yOffset = 0;
+
+  element.addEventListener('mousedown', dragStart, false);
+  document.addEventListener('mousemove', drag, false);
+  document.addEventListener('mouseup', dragEnd, false);
+
+  function dragStart(e) {
+    // Only allow dragging from the handle
+    if (!e.target.closest('.drag-handle')) return;
+
+    const rect = element.getBoundingClientRect();
+    xOffset = rect.left;
+    yOffset = rect.top;
+
+    initialX = e.clientX - xOffset;
+    initialY = e.clientY - yOffset;
+
+    if (e.target.closest('.drag-handle')) {
+      isDragging = true;
+      e.target.style.cursor = 'grabbing';
+    }
+  }
+
+  function drag(e) {
+    if (isDragging) {
+      e.preventDefault();
+
+      currentX = e.clientX - initialX;
+      currentY = e.clientY - initialY;
+
+      // Keep the element within the viewport
+      const rect = element.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width;
+      const maxY = window.innerHeight - rect.height;
+
+      currentX = Math.min(Math.max(0, currentX), maxX);
+      currentY = Math.min(Math.max(0, currentY), maxY);
+
+      element.style.left = currentX + 'px';
+      element.style.top = currentY + 'px';
+      element.style.right = 'auto';
+      element.style.bottom = 'auto';
+    }
+  }
+
+  function dragEnd(e) {
+    if (isDragging) {
+      initialX = currentX;
+      initialY = currentY;
+      isDragging = false;
+
+      const handle = element.querySelector('.drag-handle');
+      if (handle) {
+        handle.style.cursor = 'grab';
+      }
+    }
+  }
 }
 
 function init() {
