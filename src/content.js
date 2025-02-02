@@ -51,10 +51,15 @@ function displayTotal(colorTotals) {
   if (!totalDisplay) {
     totalDisplay = document.createElement('div');
     totalDisplay.id = displayId;
+
+    // Calculate initial position at bottom right
+    const initialTop = window.innerHeight - 200; // Approximate initial height
+    const initialLeft = window.innerWidth - 220; // Account for width + margin
+
     totalDisplay.style.cssText = `
       position: fixed;
-      bottom: 20px;
-      right: 20px;
+      top: ${initialTop}px;
+      left: ${initialLeft}px;
       background: white;
       color: #333;
       padding: 0;
