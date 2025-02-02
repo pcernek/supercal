@@ -1,14 +1,17 @@
 #!/bin/bash
 
+# Create dist directory if it doesn't exist
+mkdir -p dist
+
 # Get version from manifest.json
-VERSION=$(grep -o '"version": "[^"]*"' manifest.json | cut -d'"' -f4)
+VERSION=$(grep -o '"version": "[^"]*"' src/manifest.json | cut -d'"' -f4)
 
-# Create zip file with correct name
-cd src && zip -j "supercal-v${VERSION}.zip" \
-    manifest.json \
-    content.js \
-    icon16.png \
-    icon48.png \
-    icon128.png
+# Create zip file with correct name in dist directory
+zip -j -f "dist/supercal-v${VERSION}.zip" \
+    src/manifest.json \
+    src/content.js \
+    src/icon16.png \
+    src/icon48.png \
+    src/icon128.png
 
-echo "Created supercal-v${VERSION}.zip"
+echo "Created dist/supercal-v${VERSION}.zip"
