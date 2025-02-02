@@ -64,6 +64,8 @@ function displayTotal(colorTotals) {
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       cursor: default;
       user-select: none;
+      min-width: 200px;
+      width: max-content;
     `;
     document.body.appendChild(totalDisplay);
 
@@ -77,7 +79,7 @@ function displayTotal(colorTotals) {
   // Calculate grand total
   const grandTotal = Array.from(colorTotals.values()).reduce((sum, curr) => sum + curr, 0);
 
-  // Create the HTML content with a handle
+  // Create the HTML content with a handle and collapse toggle
   let content = `
     <div class="drag-handle" style="
       padding: 8px 12px;
@@ -86,10 +88,25 @@ function displayTotal(colorTotals) {
       border-top-right-radius: 8px;
       cursor: grab;
       border-bottom: 1px solid #dadce0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     ">
       <div style="font-weight: bold;">Supercal</div>
+      <div class="collapse-toggle" style="
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+      ">
+        ${totalDisplay?.dataset.collapsed === 'true' ? '▼' : '▲'}
+      </div>
     </div>
-    <div style="padding: 12px;">
+    <div class="card-body" style="
+      padding: 12px;
+      display: ${totalDisplay?.dataset.collapsed === 'true' ? 'none' : 'block'};
+    ">
       <div style="display: flex; align-items: center; margin-bottom: 8px;">
         <div style="font-weight: 500; margin-right: 8px;">Total Time:</div>
         <div style="font-weight: bold;">${formatDuration(grandTotal)}</div>
@@ -107,6 +124,17 @@ function displayTotal(colorTotals) {
 
   content += '</div>';
   totalDisplay.innerHTML = content;
+
+  // Add collapse toggle handler
+  const toggle = totalDisplay.querySelector('.collapse-toggle');
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent drag from starting
+    const isCollapsed = totalDisplay.dataset.collapsed === 'true';
+    totalDisplay.dataset.collapsed = !isCollapsed;
+    const body = totalDisplay.querySelector('.card-body');
+    body.style.display = !isCollapsed ? 'none' : 'block';
+    toggle.textContent = !isCollapsed ? '▼' : '▲';
+  });
 
   // Clear the updating flag
   setTimeout(() => {
@@ -128,8 +156,8 @@ function makeDraggable(element) {
   document.addEventListener('mouseup', dragEnd, false);
 
   function dragStart(e) {
-    // Only allow dragging from the handle
-    if (!e.target.closest('.drag-handle')) return;
+    // Only allow dragging from the handle, but not from the collapse toggle
+    if (!e.target.closest('.drag-handle') || e.target.closest('.collapse-toggle')) return;
 
     const rect = element.getBoundingClientRect();
     xOffset = rect.left;
