@@ -1,22 +1,25 @@
+// Define color constants
+const CALENDAR_COLORS = {
+  'rgb(213, 0, 0)': 'Tomato',
+  'rgb(230, 124, 115)': 'Flamingo',
+  'rgb(244, 81, 30)': 'Tangerine',
+  'rgb(246, 191, 38)': 'Banana',
+  'rgb(51, 182, 121)': 'Sage',
+  'rgb(11, 128, 67)': 'Basil',
+  'rgb(3, 155, 229)': 'Peacock',
+  'rgb(63, 81, 181)': 'Blueberry',
+  'rgb(121, 134, 203)': 'Lavender',
+  'rgb(142, 36, 170)': 'Grape',
+  'rgb(97, 97, 97)': 'Graphite',
+  'rgb(96, 255, 215)': 'Calendar color'
+};
+
 function calculateTotalTime() {
   const events = document.querySelectorAll('[data-eventchip]');
   const colorTotals = new Map();
 
-  // Define preset colors from the color picker
-  const presetColors = [
-    'rgb(213, 0, 0)',      // Tomato
-    'rgb(230, 124, 115)',  // Flamingo
-    'rgb(244, 81, 30)',    // Tangerine
-    'rgb(246, 191, 38)',   // Banana
-    'rgb(51, 182, 121)',   // Sage
-    'rgb(11, 128, 67)',    // Basil
-    'rgb(3, 155, 229)',    // Peacock
-    'rgb(63, 81, 181)',    // Blueberry
-    'rgb(121, 134, 203)',  // Lavender
-    'rgb(142, 36, 170)',   // Grape
-    'rgb(97, 97, 97)',     // Graphite
-    'rgb(96, 255, 215)'    // Calendar color
-  ];
+  // Use Object.keys to get preset colors
+  const presetColors = Object.keys(CALENDAR_COLORS);
 
   events.forEach(event => {
     const timeElement = event.querySelector('.gVNoLb');
@@ -153,8 +156,21 @@ function displayTotal(colorTotals) {
 
   colorTotals.forEach((minutes, color) => {
     content += `
-      <div style="display: flex; align-items: center; margin: 4px 0;">
-        <div style="width: 12px; height: 12px; background: ${color}; margin-right: 8px; border-radius: 2px;"></div>
+      <div style="
+        display: flex; 
+        align-items: center; 
+        margin: 4px 0;
+        position: relative;
+      " 
+      title="${CALENDAR_COLORS[color] || 'Custom color'}"
+      >
+        <div style="
+          width: 12px; 
+          height: 12px; 
+          background: ${color}; 
+          margin-right: 8px; 
+          border-radius: 2px;
+        "></div>
         <div>${formatDuration(minutes)}</div>
       </div>
     `;
