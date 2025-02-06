@@ -2,6 +2,22 @@ function calculateTotalTime() {
   const events = document.querySelectorAll('[data-eventchip]');
   const colorTotals = new Map();
 
+  // Define preset colors from the color picker
+  const presetColors = [
+    'rgb(213, 0, 0)',      // Tomato
+    'rgb(230, 124, 115)',  // Flamingo
+    'rgb(244, 81, 30)',    // Tangerine
+    'rgb(246, 191, 38)',   // Banana
+    'rgb(51, 182, 121)',   // Sage
+    'rgb(11, 128, 67)',    // Basil
+    'rgb(3, 155, 229)',    // Peacock
+    'rgb(63, 81, 181)',    // Blueberry
+    'rgb(121, 134, 203)',  // Lavender
+    'rgb(142, 36, 170)',   // Grape
+    'rgb(97, 97, 97)',     // Graphite
+    'rgb(96, 255, 215)'    // Calendar color
+  ];
+
   events.forEach(event => {
     const timeElement = event.querySelector('.gVNoLb');
     if (!timeElement) return;
@@ -16,12 +32,14 @@ function calculateTotalTime() {
 
       if (end > start) {
         const duration = end - start;
-        // Get the background color from the event div
-        const backgroundColor = event.style.backgroundColor || 'rgb(3, 155, 229)'; // Default blue
+        const backgroundColor = event.style.backgroundColor || 'rgb(3, 155, 229)';
+        
+        // Find closest preset color
+        const closestColor = findClosestColor(backgroundColor, presetColors);
 
         // Add to color total
-        const current = colorTotals.get(backgroundColor) || 0;
-        colorTotals.set(backgroundColor, current + duration);
+        const current = colorTotals.get(closestColor) || 0;
+        colorTotals.set(closestColor, current + duration);
       }
     }
   });
@@ -237,6 +255,31 @@ function makeDraggable(element) {
       localStorage.setItem('supercal_state', JSON.stringify(state));
     }
   }
+}
+
+function findClosestColor(color, presetColors) {
+  // Parse RGB values from color string
+  const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!rgbMatch) return presetColors[0];
+
+  const [_, r1, g1, b1] = rgbMatch.map(Number);
+  
+  let minDistance = Infinity;
+  let closestColor = presetColors[0];
+
+  for (const presetColor of presetColors) {
+    const [r2, g2, b2] = presetColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).slice(1).map(Number);
+    
+    // Calculate Manhattan distance
+    const distance = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+    
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestColor = presetColor;
+    }
+  }
+
+  return closestColor;
 }
 
 function init() {
