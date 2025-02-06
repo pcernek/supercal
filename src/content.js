@@ -330,24 +330,67 @@ function rgbToHsl(r, g, b) {
 }
 
 function init() {
-  // Initial calculation
-  calculateTotalTime();
+  let currentDisplay = null;
+  let observer = null;
 
-  // Recalculate when view changes, but ignore mutations to our display
-  const observer = new MutationObserver((mutations) => {
-    const relevantChange = mutations.some(mutation => {
-      return !mutation.target.id?.includes('calendar-time-total');
-    });
-
-    if (relevantChange) {
-      calculateTotalTime();
+  function cleanup() {
+    if (currentDisplay) {
+      currentDisplay.remove();
+      currentDisplay = null;
     }
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  }
+
+  function setupDisplay() {
+    const url = window.location.href;
+    const isValidView = url.match(/calendar\.google\.com\/calendar\/.*\/(week|day)/);
+    
+    if (!isValidView) {
+      cleanup();
+      return;
+    }
+
+    // Initial calculation
+    calculateTotalTime();
+
+    // Store reference to current display
+    currentDisplay = document.getElementById('calendar-time-total');
+
+    // Setup mutation observer if not already setup
+    if (!observer) {
+      observer = new MutationObserver((mutations) => {
+        const relevantChange = mutations.some(mutation => {
+          return !mutation.target.id?.includes('calendar-time-total');
+        });
+
+        if (relevantChange) {
+          calculateTotalTime();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+
+  // Watch for URL changes
+  const urlObserver = new MutationObserver(() => {
+    setupDisplay();
   });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
+  urlObserver.observe(document.querySelector('title'), {
+    subtree: true,
+    characterData: true,
+    childList: true
   });
+
+  // Initial setup
+  setupDisplay();
 }
 
 // Make sure the page is loaded before running
