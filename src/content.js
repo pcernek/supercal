@@ -280,14 +280,18 @@ function findClosestColor(color, presetColors) {
 
   const [_, r1, g1, b1] = rgbMatch.map(Number);
   
+  // Convert input color to HSL
+  const [h1, s1, l1] = rgbToHsl(r1, g1, b1);
+  
   let minDistance = Infinity;
   let closestColor = presetColors[0];
 
   for (const presetColor of presetColors) {
     const [r2, g2, b2] = presetColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).slice(1).map(Number);
+    const [h2, s2, l2] = rgbToHsl(r2, g2, b2);
     
-    // Calculate Manhattan distance
-    const distance = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+    // Calculate distance with more weight on hue
+    const distance = Math.abs(h1 - h2) * 2 + Math.abs(s1 - s2) + Math.abs(l1 - l2) * 0.5;
     
     if (distance < minDistance) {
       minDistance = distance;
@@ -296,6 +300,33 @@ function findClosestColor(color, presetColors) {
   }
 
   return closestColor;
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+
+    h /= 6;
+  }
+
+  return [h, s, l];
 }
 
 function init() {
