@@ -17,14 +17,24 @@ const CALENDAR_COLORS = {
 function calculateTotalTime() {
   const events = document.querySelectorAll('[data-eventchip]');
   const colorTotals = new Map();
+  const processedEvents = new Map();
 
   // Use Object.keys to get preset colors
   const presetColors = Object.keys(CALENDAR_COLORS);
 
+  // First pass: collect the most current time for each event ID
   events.forEach(event => {
+    const eventId = event.getAttribute('data-eventid');
     const timeElement = event.querySelector('.gVNoLb');
     if (!timeElement) return;
 
+    // Always update the processed event, this ensures we get the most current time
+    processedEvents.set(eventId, event);
+  });
+
+  // Second pass: process only the final version of each event
+  processedEvents.forEach(event => {
+    const timeElement = event.querySelector('.gVNoLb');
     const timeText = timeElement.textContent;
     const timeMatch = timeText.match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/);
 
