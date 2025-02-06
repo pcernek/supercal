@@ -330,67 +330,29 @@ function rgbToHsl(r, g, b) {
 }
 
 function init() {
-  let currentDisplay = null;
-  let observer = null;
-
-  function cleanup() {
-    if (currentDisplay) {
-      currentDisplay.remove();
-      currentDisplay = null;
-    }
-    if (observer) {
-      observer.disconnect();
-      observer = null;
-    }
+  function isValidCalendarView() {
+    return window.location.pathname.match(/\/(week|day)$/);
   }
 
-  function setupDisplay() {
-    const url = window.location.href;
-    const isValidView = url.match(/calendar\.google\.com\/calendar\/.*\/(week|day)/);
+  const observer = new MutationObserver(() => {
+    const totalDisplay = document.getElementById('calendar-time-total');
     
-    if (!isValidView) {
-      cleanup();
-      return;
+    if (isValidCalendarView()) {
+      calculateTotalTime();
+    } else if (totalDisplay) {
+      totalDisplay.remove();
     }
+  });
 
-    // Initial calculation
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  // Initial check
+  if (isValidCalendarView()) {
     calculateTotalTime();
-
-    // Store reference to current display
-    currentDisplay = document.getElementById('calendar-time-total');
-
-    // Setup mutation observer if not already setup
-    if (!observer) {
-      observer = new MutationObserver((mutations) => {
-        const relevantChange = mutations.some(mutation => {
-          return !mutation.target.id?.includes('calendar-time-total');
-        });
-
-        if (relevantChange) {
-          calculateTotalTime();
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-    }
   }
-
-  // Watch for URL changes
-  const urlObserver = new MutationObserver(() => {
-    setupDisplay();
-  });
-
-  urlObserver.observe(document.querySelector('title'), {
-    subtree: true,
-    characterData: true,
-    childList: true
-  });
-
-  // Initial setup
-  setupDisplay();
 }
 
 // Make sure the page is loaded before running
