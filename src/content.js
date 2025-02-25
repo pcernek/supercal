@@ -46,7 +46,7 @@ function calculateTotalTime() {
       if (end > start) {
         const duration = end - start;
         const backgroundColor = event.style.backgroundColor || 'rgb(3, 155, 229)';
-        
+
         // Find closest preset color
         const closestColor = findClosestColor(backgroundColor, presetColors);
 
@@ -66,8 +66,7 @@ function convertToMinutes(hour, minutes) {
 
 function formatDuration(minutes) {
   const hours = minutes / 60;
-  const formattedHours = hours % 1 === 0 ? Math.floor(hours) : hours.toFixed(1);
-  return `${formattedHours} h`;
+  return `${hours.toFixed(2)} h`;
 }
 
 function displayTotal(colorTotals) {
@@ -289,20 +288,20 @@ function findClosestColor(color, presetColors) {
   if (!rgbMatch) return presetColors[0];
 
   const [_, r1, g1, b1] = rgbMatch.map(Number);
-  
+
   // Convert input color to HSL
   const [h1, s1, l1] = rgbToHsl(r1, g1, b1);
-  
+
   let minDistance = Infinity;
   let closestColor = presetColors[0];
 
   for (const presetColor of presetColors) {
     const [r2, g2, b2] = presetColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).slice(1).map(Number);
     const [h2, s2, l2] = rgbToHsl(r2, g2, b2);
-    
+
     // Calculate distance with more weight on hue
     const distance = Math.abs(h1 - h2) * 2 + Math.abs(s1 - s2) + Math.abs(l1 - l2) * 0.5;
-    
+
     if (distance < minDistance) {
       minDistance = distance;
       closestColor = presetColor;
@@ -346,7 +345,7 @@ function init() {
 
   const observer = new MutationObserver(() => {
     const totalDisplay = document.getElementById('calendar-time-total');
-    
+
     if (isValidCalendarView()) {
       calculateTotalTime();
     } else if (totalDisplay) {
