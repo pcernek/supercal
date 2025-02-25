@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supercal</title>
+  <style>
+    body {
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+      width: 320px;
+      padding: 16px;
+      margin: 0;
+      color: #333;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #dadce0;
+      padding-bottom: 12px;
+    }
+
+    .header img {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .status {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      background-color: #f1f3f4;
+    }
+
+    .status.error {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+
+    .status.success {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+
+    button {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+
+    button:hover {
+      background-color: #1765cc;
+    }
+
+    button.secondary {
+      background-color: #f1f3f4;
+      color: #1a73e8;
+    }
+
+    button.secondary:hover {
+      background-color: #e8eaed;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .date-range {
+      margin-bottom: 16px;
+    }
+
+    .date-range label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .date-range input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <img src="icon48.png" alt="Supercal logo">
+    <h1>Supercal</h1>
+  </div>
+
+  <div id="auth-status" class="status">
+    Checking authentication status...
+  </div>
+
+  <div id="date-selector" class="date-range hidden">
+    <label for="start-date">Start Date:</label>
+    <input type="date" id="start-date">
+
+    <label for="end-date">End Date:</label>
+    <input type="date" id="end-date">
+  </div>
+
+  <div class="actions">
+    <button id="auth-button" class="hidden">Sign In</button>
+    <button id="fetch-button" class="hidden">Fetch Calendar Data</button>
+    <button id="signout-button" class="secondary hidden">Sign Out</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

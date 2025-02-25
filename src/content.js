@@ -14,7 +14,27 @@ const CALENDAR_COLORS = {
   'rgb(96, 255, 215)': 'Calendar color'
 };
 
+// Store API data
+let apiCalendarData = null;
+
+// Listen for messages from the popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'processCalendarData') {
+    apiCalendarData = request.data;
+    calculateTotalTime();
+    sendResponse({ success: true });
+  }
+  return true;
+});
+
 function calculateTotalTime() {
+  // If we have API data, use that instead of scraping the DOM
+  if (apiCalendarData) {
+    calculateFromApiData();
+    return;
+  }
+
+  // Otherwise, fall back to the original DOM scraping method
   const events = document.querySelectorAll('[data-eventchip]');
   const colorTotals = new Map();
   const processedEvents = new Map();
@@ -60,6 +80,57 @@ function calculateTotalTime() {
   displayTotal(colorTotals);
 }
 
+function calculateFromApiData() {
+  const colorTotals = new Map();
+  const presetColors = Object.keys(CALENDAR_COLORS);
+
+  // Process each event from the API data
+  apiCalendarData.items.forEach(event => {
+    // Skip events without start or end times
+    if (!event.start || !event.end || !event.start.dateTime || !event.end.dateTime) {
+      return;
+    }
+
+    const startTime = new Date(event.start.dateTime);
+    const endTime = new Date(event.end.dateTime);
+
+    // Calculate duration in minutes
+    const durationMinutes = (endTime - startTime) / (1000 * 60);
+
+    // Get the color from the event
+    let eventColor = 'rgb(3, 155, 229)'; // Default Peacock color
+
+    if (event.colorId) {
+      // Map Google Calendar colorId to our RGB colors
+      // This is a simplified mapping - you may need to adjust based on actual colors
+      const colorMap = {
+        '1': 'rgb(213, 0, 0)',      // Tomato
+        '2': 'rgb(230, 124, 115)',  // Flamingo
+        '3': 'rgb(244, 81, 30)',    // Tangerine
+        '4': 'rgb(246, 191, 38)',   // Banana
+        '5': 'rgb(51, 182, 121)',   // Sage
+        '6': 'rgb(11, 128, 67)',    // Basil
+        '7': 'rgb(3, 155, 229)',    // Peacock
+        '8': 'rgb(63, 81, 181)',    // Blueberry
+        '9': 'rgb(121, 134, 203)',  // Lavender
+        '10': 'rgb(142, 36, 170)',  // Grape
+        '11': 'rgb(97, 97, 97)'     // Graphite
+      };
+
+      eventColor = colorMap[event.colorId] || eventColor;
+    }
+
+    // Find closest preset color
+    const closestColor = findClosestColor(eventColor, presetColors);
+
+    // Add to color total
+    const current = colorTotals.get(closestColor) || 0;
+    colorTotals.set(closestColor, current + durationMinutes);
+  });
+
+  displayTotal(colorTotals, true);
+}
+
 function convertToMinutes(hour, minutes) {
   return parseInt(hour) * 60 + parseInt(minutes);
 }
@@ -69,7 +140,7 @@ function formatDuration(minutes) {
   return `${hours.toFixed(2)} h`;
 }
 
-function displayTotal(colorTotals) {
+function displayTotal(colorTotals, isFromApi = false) {
   let totalDisplay = document.getElementById('calendar-time-total');
   const displayId = 'calendar-time-total';
 
@@ -142,6 +213,8 @@ function displayTotal(colorTotals) {
         >
         <div style="font-weight: bold;">Supercal</div>
       </div>
+      <div style="display: flex; align-items: center;">
+        ${isFromApi ? '<span style="font-size: 12px; color: #1a73e8; margin-right: 8px;">API Data</span>' : ''}
       <div class="collapse-toggle" style="
         cursor: pointer;
         padding: 4px;
@@ -150,6 +223,7 @@ function displayTotal(colorTotals) {
         align-items: center;
       ">
         ${totalDisplay?.dataset.collapsed === 'true' ? '▼' : '▲'}
+        </div>
       </div>
     </div>
     <div class="card-body" style="
