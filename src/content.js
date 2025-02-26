@@ -1,92 +1,116 @@
-// Define color constants
-const CALENDAR_COLORS = {
-  'rgb(213, 0, 0)': 'Tomato',
-  'rgb(230, 124, 115)': 'Flamingo',
-  'rgb(244, 81, 30)': 'Tangerine',
-  'rgb(246, 191, 38)': 'Banana',
-  'rgb(51, 182, 121)': 'Sage',
-  'rgb(11, 128, 67)': 'Basil',
-  'rgb(3, 155, 229)': 'Peacock',
-  'rgb(63, 81, 181)': 'Blueberry',
-  'rgb(121, 134, 203)': 'Lavender',
-  'rgb(142, 36, 170)': 'Grape',
-  'rgb(97, 97, 97)': 'Graphite',
-  'rgb(96, 255, 215)': 'Calendar color'
-};
+import {
+  hexToRgb,
+  isValidCalendarView,
+  detectVisibleDateRange
+} from './utils.js';
+
+// Import panel management functions
+import {
+  displayTotal,
+  ensurePanelVisible,
+  savePanelState
+} from './panel-manager.js';
 
 // Store API data
 let apiCalendarData = null;
+let apiColorDefinitions = null;
 
-// Listen for messages from the popup
+// Track the last fetch time and current date range to prevent unnecessary fetches
+let lastFetchTime = 0;
+let currentDateRange = { startDate: null, endDate: null };
+let isFetching = false;
+let lastUrl = window.location.href;
+
+// Function to fetch calendar data automatically
+function fetchCalendarData() {
+  // Prevent fetching if already in progress
+  if (isFetching) {
+    console.log('Fetch already in progress, skipping');
+    return;
+  }
+
+  const newDateRange = detectVisibleDateRange();
+  console.log('Fetching calendar data for range:', newDateRange.startDate, 'to', newDateRange.endDate);
+
+  // Set fetching flag to prevent multiple simultaneous requests
+  isFetching = true;
+
+  chrome.runtime.sendMessage({
+    action: 'getCalendarEvents',
+    timeMin: newDateRange.startDate.toISOString(),
+    timeMax: newDateRange.endDate.toISOString()
+  }, (response) => {
+    isFetching = false;
+
+    if (response && response.success) {
+      console.log('Successfully fetched calendar data');
+      apiCalendarData = response.data;
+      apiColorDefinitions = response.colors;
+
+      // Update tracking variables
+      lastFetchTime = Date.now();
+      currentDateRange = newDateRange;
+
+      calculateFromApiData();
+    } else {
+      console.error('Failed to fetch calendar data:', response?.error || 'Unknown error');
+    }
+  });
+}
+
+// Function to check if URL has changed (for navigation detection)
+function checkUrlChange() {
+  const currentUrl = window.location.href;
+  if (currentUrl !== lastUrl) {
+    console.log('URL changed from', lastUrl, 'to', currentUrl);
+    lastUrl = currentUrl;
+    return true;
+  }
+  return false;
+}
+
+// Listen for messages from the popup (only for authentication notifications)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'processCalendarData') {
-    apiCalendarData = request.data;
-    calculateTotalTime();
+  if (request.action === 'authStatusChanged' && request.status === 'authenticated') {
+    // User just authenticated, fetch data
+    fetchCalendarData();
     sendResponse({ success: true });
   }
   return true;
 });
 
-function calculateTotalTime() {
-  // If we have API data, use that instead of scraping the DOM
-  if (apiCalendarData) {
-    calculateFromApiData();
+// Listen for the custom refresh event
+document.addEventListener('supercal:refresh', () => {
+  fetchCalendarData();
+});
+
+function calculateFromApiData() {
+  if (!apiCalendarData || !apiCalendarData.items || !Array.isArray(apiCalendarData.items)) {
+    console.error('Invalid API data format:', apiCalendarData);
     return;
   }
 
-  // Otherwise, fall back to the original DOM scraping method
-  const events = document.querySelectorAll('[data-eventchip]');
+  console.log('Processing API data:', apiCalendarData);
+
+  // Create a map of colorId to background color from API color definitions
+  const colorMap = new Map();
+  const colorNames = new Map();
+
+  if (apiColorDefinitions && apiColorDefinitions.event) {
+    Object.entries(apiColorDefinitions.event).forEach(([id, colorInfo]) => {
+      colorMap.set(id, colorInfo.background);
+      colorNames.set(id, `Color ${id}`); // Default name
+    });
+
+    console.log('Color definitions from API:', apiColorDefinitions);
+  }
+
   const colorTotals = new Map();
-  const processedEvents = new Map();
-
-  // Use Object.keys to get preset colors
-  const presetColors = Object.keys(CALENDAR_COLORS);
-
-  // First pass: collect the most current time for each event ID
-  events.forEach(event => {
-    const eventId = event.getAttribute('data-eventid');
-    const timeElement = event.querySelector('.gVNoLb');
-    if (!timeElement) return;
-
-    // Always update the processed event, this ensures we get the most current time
-    processedEvents.set(eventId, event);
-  });
-
-  // Second pass: process only the final version of each event
-  processedEvents.forEach(event => {
-    const timeElement = event.querySelector('.gVNoLb');
-    const timeText = timeElement.textContent;
-    const timeMatch = timeText.match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/);
-
-    if (timeMatch) {
-      const [_, startHour, startMin, endHour, endMin] = timeMatch;
-      const start = convertToMinutes(startHour, startMin);
-      const end = convertToMinutes(endHour, endMin);
-
-      if (end > start) {
-        const duration = end - start;
-        const backgroundColor = event.style.backgroundColor || 'rgb(3, 155, 229)';
-
-        // Find closest preset color
-        const closestColor = findClosestColor(backgroundColor, presetColors);
-
-        // Add to color total
-        const current = colorTotals.get(closestColor) || 0;
-        colorTotals.set(closestColor, current + duration);
-      }
-    }
-  });
-
-  displayTotal(colorTotals);
-}
-
-function calculateFromApiData() {
-  const colorTotals = new Map();
-  const presetColors = Object.keys(CALENDAR_COLORS);
+  const colorIdToRgb = new Map(); // Map to store colorId to RGB mapping for display
 
   // Process each event from the API data
   apiCalendarData.items.forEach(event => {
-    // Skip events without start or end times
+    // Skip events without start or end times (all-day events)
     if (!event.start || !event.end || !event.start.dateTime || !event.end.dateTime) {
       return;
     }
@@ -97,345 +121,185 @@ function calculateFromApiData() {
     // Calculate duration in minutes
     const durationMinutes = (endTime - startTime) / (1000 * 60);
 
+    // Skip events with zero or negative duration
+    if (durationMinutes <= 0) {
+      return;
+    }
+
     // Get the color from the event
     let eventColor = 'rgb(3, 155, 229)'; // Default Peacock color
+    let colorId = event.colorId || '7'; // Default to Peacock (7)
 
-    if (event.colorId) {
-      // Map Google Calendar colorId to our RGB colors
-      // This is a simplified mapping - you may need to adjust based on actual colors
-      const colorMap = {
-        '1': 'rgb(213, 0, 0)',      // Tomato
-        '2': 'rgb(230, 124, 115)',  // Flamingo
-        '3': 'rgb(244, 81, 30)',    // Tangerine
-        '4': 'rgb(246, 191, 38)',   // Banana
-        '5': 'rgb(51, 182, 121)',   // Sage
-        '6': 'rgb(11, 128, 67)',    // Basil
-        '7': 'rgb(3, 155, 229)',    // Peacock
-        '8': 'rgb(63, 81, 181)',    // Blueberry
-        '9': 'rgb(121, 134, 203)',  // Lavender
-        '10': 'rgb(142, 36, 170)',  // Grape
-        '11': 'rgb(97, 97, 97)'     // Graphite
-      };
-
-      eventColor = colorMap[event.colorId] || eventColor;
+    // Use the color from the API color definitions if available
+    if (colorId && colorMap.has(colorId)) {
+      const hexColor = colorMap.get(colorId);
+      eventColor = hexToRgb(hexColor);
+      colorIdToRgb.set(colorId, eventColor);
     }
 
-    // Find closest preset color
-    const closestColor = findClosestColor(eventColor, presetColors);
-
-    // Add to color total
-    const current = colorTotals.get(closestColor) || 0;
-    colorTotals.set(closestColor, current + durationMinutes);
+    // Add to color total using colorId as the key
+    const colorKey = colorId;
+    const current = colorTotals.get(colorKey) || 0;
+    colorTotals.set(colorKey, current + durationMinutes);
   });
 
-  displayTotal(colorTotals, true);
+  displayTotal(colorTotals, colorMap, colorIdToRgb);
 }
 
-function convertToMinutes(hour, minutes) {
-  return parseInt(hour) * 60 + parseInt(minutes);
-}
+function checkAuthAndFetchData() {
+  // Skip if we're already fetching
+  if (isFetching) return;
 
-function formatDuration(minutes) {
-  const hours = minutes / 60;
-  return `${hours.toFixed(2)} h`;
-}
-
-function displayTotal(colorTotals, isFromApi = false) {
-  let totalDisplay = document.getElementById('calendar-time-total');
-  const displayId = 'calendar-time-total';
-
-  // Skip if we're already updating this element to avoid infinite loops
-  if (document.getElementById(displayId)?.dataset.updating === 'true') {
-    return;
-  }
-
-  if (!totalDisplay) {
-    totalDisplay = document.createElement('div');
-    totalDisplay.id = displayId;
-
-    // Get saved position or use default
-    const savedState = JSON.parse(localStorage.getItem('supercal_state') || '{}');
-    const defaultTop = window.innerHeight - 200;
-    const defaultLeft = window.innerWidth - 220;
-
-    totalDisplay.style.cssText = `
-      position: fixed;
-      top: ${savedState.top || defaultTop}px;
-      left: ${savedState.left || defaultLeft}px;
-      background: white;
-      color: #333;
-      padding: 0;
-      border-radius: 8px;
-      z-index: 9999;
-      font-family: 'Google Sans',Roboto,Arial,sans-serif;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      cursor: default;
-      min-width: 200px;
-      width: max-content;
-    `;
-
-    // Restore collapsed state
-    if (savedState.collapsed) {
-      totalDisplay.dataset.collapsed = 'true';
+  chrome.runtime.sendMessage({ action: 'getAuthToken', interactive: false }, (response) => {
+    if (response && response.success) {
+      // User is authenticated, fetch data
+      fetchCalendarData();
+    } else {
+      console.log('User not authenticated. Calendar data will not be fetched.');
     }
-
-    document.body.appendChild(totalDisplay);
-
-    // Add drag functionality
-    makeDraggable(totalDisplay);
-  }
-
-  // Mark that we're updating
-  totalDisplay.dataset.updating = 'true';
-
-  // Calculate grand total
-  const grandTotal = Array.from(colorTotals.values()).reduce((sum, curr) => sum + curr, 0);
-
-  // Create the HTML content with a handle and collapse toggle
-  let content = `
-    <div class="drag-handle" style="
-      padding: 8px 12px;
-      background: #f1f3f4;
-      border-top-left-radius: 8px;
-      border-top-right-radius: 8px;
-      cursor: grab;
-      border-bottom: 1px solid #dadce0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      user-select: none;
-    ">
-      <div style="display: flex; align-items: center;">
-        <img src="${chrome.runtime.getURL('icon48.png')}" 
-             width="16" 
-             height="16" 
-             style="margin-right: 8px;"
-        >
-        <div style="font-weight: bold;">Supercal</div>
-      </div>
-      <div style="display: flex; align-items: center;">
-        ${isFromApi ? '<span style="font-size: 12px; color: #1a73e8; margin-right: 8px;">API Data</span>' : ''}
-      <div class="collapse-toggle" style="
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-      ">
-        ${totalDisplay?.dataset.collapsed === 'true' ? '▼' : '▲'}
-        </div>
-      </div>
-    </div>
-    <div class="card-body" style="
-      padding: 12px;
-      display: ${totalDisplay?.dataset.collapsed === 'true' ? 'none' : 'block'};
-      user-select: text;
-    ">
-      <div style="display: flex; align-items: center; margin-bottom: 8px;">
-        <div style="font-weight: 500; margin-right: 8px;">Total:</div>
-        <div style="font-weight: bold;">${formatDuration(grandTotal)}</div>
-      </div>
-  `;
-
-  colorTotals.forEach((minutes, color) => {
-    content += `
-      <div style="
-        display: flex; 
-        align-items: center; 
-        margin: 4px 0;
-        position: relative;
-      " 
-      title="${CALENDAR_COLORS[color] || 'Custom color'}"
-      >
-        <div style="
-          width: 12px; 
-          height: 12px; 
-          background: ${color}; 
-          margin-right: 8px; 
-          border-radius: 2px;
-        "></div>
-        <div>${formatDuration(minutes)}</div>
-      </div>
-    `;
   });
-
-  content += '</div>';
-  totalDisplay.innerHTML = content;
-
-  // Add collapse toggle handler
-  const toggle = totalDisplay.querySelector('.collapse-toggle');
-  toggle.addEventListener('click', (e) => {
-    e.stopPropagation(); // Prevent drag from starting
-    const isCollapsed = totalDisplay.dataset.collapsed === 'true';
-    totalDisplay.dataset.collapsed = !isCollapsed;
-    const body = totalDisplay.querySelector('.card-body');
-    body.style.display = !isCollapsed ? 'none' : 'block';
-    toggle.textContent = !isCollapsed ? '▼' : '▲';
-
-    // Save collapsed state
-    const state = JSON.parse(localStorage.getItem('supercal_state') || '{}');
-    state.collapsed = !isCollapsed;
-    localStorage.setItem('supercal_state', JSON.stringify(state));
-  });
-
-  // Clear the updating flag
-  setTimeout(() => {
-    totalDisplay.dataset.updating = 'false';
-  }, 0);
-}
-
-function makeDraggable(element) {
-  let isDragging = false;
-  let currentX;
-  let currentY;
-  let initialX;
-  let initialY;
-  let xOffset = 0;
-  let yOffset = 0;
-
-  element.addEventListener('mousedown', dragStart, false);
-  document.addEventListener('mousemove', drag, false);
-  document.addEventListener('mouseup', dragEnd, false);
-
-  function dragStart(e) {
-    // Only allow dragging from the handle, but not from the collapse toggle
-    if (!e.target.closest('.drag-handle') || e.target.closest('.collapse-toggle')) return;
-
-    const rect = element.getBoundingClientRect();
-    xOffset = rect.left;
-    yOffset = rect.top;
-
-    initialX = e.clientX - xOffset;
-    initialY = e.clientY - yOffset;
-
-    if (e.target.closest('.drag-handle')) {
-      isDragging = true;
-      e.target.style.cursor = 'grabbing';
-    }
-  }
-
-  function drag(e) {
-    if (isDragging) {
-      e.preventDefault();
-
-      currentX = e.clientX - initialX;
-      currentY = e.clientY - initialY;
-
-      // Keep the element within the viewport
-      const rect = element.getBoundingClientRect();
-      const maxX = window.innerWidth - rect.width;
-      const maxY = window.innerHeight - rect.height;
-
-      currentX = Math.min(Math.max(0, currentX), maxX);
-      currentY = Math.min(Math.max(0, currentY), maxY);
-
-      element.style.left = currentX + 'px';
-      element.style.top = currentY + 'px';
-      element.style.right = 'auto';
-      element.style.bottom = 'auto';
-    }
-  }
-
-  function dragEnd(e) {
-    if (isDragging) {
-      initialX = currentX;
-      initialY = currentY;
-      isDragging = false;
-
-      const handle = element.querySelector('.drag-handle');
-      if (handle) {
-        handle.style.cursor = 'grab';
-      }
-
-      // Save position
-      const state = JSON.parse(localStorage.getItem('supercal_state') || '{}');
-      state.top = currentY;
-      state.left = currentX;
-      localStorage.setItem('supercal_state', JSON.stringify(state));
-    }
-  }
-}
-
-function findClosestColor(color, presetColors) {
-  // Parse RGB values from color string
-  const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-  if (!rgbMatch) return presetColors[0];
-
-  const [_, r1, g1, b1] = rgbMatch.map(Number);
-
-  // Convert input color to HSL
-  const [h1, s1, l1] = rgbToHsl(r1, g1, b1);
-
-  let minDistance = Infinity;
-  let closestColor = presetColors[0];
-
-  for (const presetColor of presetColors) {
-    const [r2, g2, b2] = presetColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).slice(1).map(Number);
-    const [h2, s2, l2] = rgbToHsl(r2, g2, b2);
-
-    // Calculate distance with more weight on hue
-    const distance = Math.abs(h1 - h2) * 2 + Math.abs(s1 - s2) + Math.abs(l1 - l2) * 0.5;
-
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestColor = presetColor;
-    }
-  }
-
-  return closestColor;
-}
-
-function rgbToHsl(r, g, b) {
-  r /= 255;
-  g /= 255;
-  b /= 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0;
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-
-    h /= 6;
-  }
-
-  return [h, s, l];
 }
 
 function init() {
-  function isValidCalendarView() {
-    return window.location.pathname.match(/\/(week|day)$/);
-  }
+  // Check authentication status first
+  checkAuthAndFetchData();
 
-  const observer = new MutationObserver(() => {
-    const totalDisplay = document.getElementById('calendar-time-total');
+  // Set up URL change detection using history API
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
 
-    if (isValidCalendarView()) {
-      calculateTotalTime();
-    } else if (totalDisplay) {
-      totalDisplay.remove();
+  history.pushState = function () {
+    originalPushState.apply(this, arguments);
+    setTimeout(() => {
+      if (checkUrlChange() && isValidCalendarView()) {
+        console.log('History pushState detected');
+        fetchCalendarData();
+      }
+    }, 300);
+  };
+
+  history.replaceState = function () {
+    originalReplaceState.apply(this, arguments);
+    setTimeout(() => {
+      if (checkUrlChange() && isValidCalendarView()) {
+        console.log('History replaceState detected');
+        fetchCalendarData();
+      }
+    }, 300);
+  };
+
+  // Listen for popstate events (back/forward navigation)
+  window.addEventListener('popstate', () => {
+    setTimeout(() => {
+      if (checkUrlChange() && isValidCalendarView()) {
+        console.log('Popstate event detected');
+        fetchCalendarData();
+      }
+    }, 300);
+  });
+
+  // Add direct click listeners for navigation buttons
+  document.addEventListener('click', (e) => {
+    // Check if user clicked on navigation buttons (prev/next/today)
+    const isNavButton = e.target.closest('[aria-label="Previous period"]') ||
+      e.target.closest('[aria-label="Next period"]') ||
+      e.target.closest('[aria-label="Today"]');
+
+    if (isNavButton && isValidCalendarView()) {
+      console.log('Navigation button clicked');
+      // Force a refresh after a delay to ensure UI is updated
+      setTimeout(() => {
+        fetchCalendarData();
+      }, 500);
     }
   });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
+  // Set up a MutationObserver to detect changes in the date range header
+  const observer = new MutationObserver((mutations) => {
+    if (!isValidCalendarView()) return;
+
+    // Check if the date range header has changed
+    const dateRangeChanged = mutations.some(mutation => {
+      // Check for attribute changes on the date range header
+      if (mutation.type === 'attributes' &&
+        mutation.target.tagName === 'H2' &&
+        mutation.target.hasAttribute('data-daterange')) {
+        return true;
+      }
+
+      // Check for added nodes that contain or are the date range header
+      return Array.from(mutation.addedNodes).some(node => {
+        return node.nodeType === 1 && (
+          node.querySelector('h2[data-daterange]') ||
+          node.matches('h2[data-daterange]')
+        );
+      });
+    });
+
+    if (dateRangeChanged) {
+      console.log('Date range header changed, fetching data');
+      setTimeout(() => {
+        fetchCalendarData();
+      }, 300);
+    }
+
+    // Also check if our panel was removed and needs to be restored
+    const panelRemoved = mutations.some(mutation => {
+      return Array.from(mutation.removedNodes).some(node => {
+        return node.id === 'calendar-time-total' ||
+          (node.nodeType === 1 && node.querySelector('#calendar-time-total'));
+      });
+    });
+
+    if (panelRemoved) {
+      console.log('Panel was removed, restoring it');
+      setTimeout(() => {
+        ensurePanelVisible(calculateFromApiData);
+      }, 300);
+    }
   });
 
-  // Initial check
-  if (isValidCalendarView()) {
-    calculateTotalTime();
-  }
+  // Start observing the document with the configured parameters
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-daterange'],
+    characterData: false
+  });
+
+  // Also check periodically for changes in the visible date range
+  let lastCheckedDateRange = null;
+  setInterval(() => {
+    if (!isValidCalendarView()) return;
+
+    const currentDateRangeElement = document.querySelector('h2[data-daterange]');
+    if (currentDateRangeElement) {
+      const currentDateRangeText = currentDateRangeElement.getAttribute('data-daterange');
+      if (currentDateRangeText && currentDateRangeText !== lastCheckedDateRange) {
+        console.log('Date range changed from polling:', lastCheckedDateRange, 'to', currentDateRangeText);
+        lastCheckedDateRange = currentDateRangeText;
+        fetchCalendarData();
+      }
+    }
+
+    // Periodically ensure our panel is visible
+    ensurePanelVisible(calculateFromApiData);
+  }, 2000); // Check every 2 seconds
+
+  // Add a listener for when the page is about to unload
+  window.addEventListener('beforeunload', () => {
+    // Save the current state of the panel
+    savePanelState();
+  });
+
+  // Check for URL changes more aggressively
+  setInterval(() => {
+    if (checkUrlChange() && isValidCalendarView()) {
+      console.log('URL change detected by interval check');
+      fetchCalendarData();
+    }
+  }, 1000);
 }
 
 // Make sure the page is loaded before running
