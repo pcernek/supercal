@@ -1,9 +1,5 @@
 # Generated files
 dist/
-manifest.json
-
-# Environment-specific configs (except templates)
-config/config.dev.json
 
 # OS files
 .DS_Store
