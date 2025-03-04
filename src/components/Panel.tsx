@@ -1,6 +1,7 @@
 import React from 'react';
 import { IPanelOptions } from '../types';
 import { formatDuration } from '../utils';
+import { useDraggable } from '../hooks/useDraggable';
 
 interface IPanelProps extends IPanelOptions {
   onRefresh: () => void;
@@ -16,23 +17,31 @@ export const Panel: React.FC<IPanelProps> = ({
   onRefresh,
   onToggleCollapse,
 }) => {
+  const { position, handleMouseDown } = useDraggable();
+
   return (
-    <div className="panel" style={{
-      position: 'fixed',
-      background: 'white',
-      color: '#333',
-      padding: 0,
-      borderRadius: '8px',
-      zIndex: 9999,
-      fontFamily: "'Google Sans',Roboto,Arial,sans-serif",
-      boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-      cursor: 'default',
-      minWidth: '200px',
-      width: 'max-content',
-      maxWidth: '400px',
-      maxHeight: '80vh',
-      overflowY: 'auto',
-    }}>
+    <div
+      className="panel"
+      style={{
+        position: 'fixed',
+        background: 'white',
+        color: '#333',
+        padding: 0,
+        borderRadius: '8px',
+        zIndex: 9999,
+        fontFamily: "'Google Sans',Roboto,Arial,sans-serif",
+        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+        cursor: 'default',
+        minWidth: '200px',
+        width: 'max-content',
+        maxWidth: '400px',
+        maxHeight: '80vh',
+        overflowY: 'auto',
+        left: position.x,
+        top: position.y,
+      }}
+      onMouseDown={(e) => handleMouseDown(e, 'drag-handle')}
+    >
       <div className="drag-handle" style={{
         padding: '8px 12px',
         background: '#f1f3f4',
