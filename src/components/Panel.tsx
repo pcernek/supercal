@@ -2,6 +2,7 @@ import React from 'react';
 import { IPanelOptions } from '../types';
 import { formatDuration } from '../utils';
 import { useDraggable } from '../hooks/useDraggable';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface IPanelProps extends IPanelOptions {
   onRefresh: () => void;
@@ -17,7 +18,8 @@ export const Panel: React.FC<IPanelProps> = ({
   onRefresh,
   onToggleCollapse,
 }) => {
-  const { position, handleMouseDown } = useDraggable();
+  const [position, setPosition] = useLocalStorage<{ x: number; y: number }>('supercal_panel_position', { x: 100, y: 100 });
+  const { handleMouseDown } = useDraggable(position, setPosition);
 
   return (
     <div

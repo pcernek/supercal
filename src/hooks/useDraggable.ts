@@ -5,8 +5,7 @@ interface IPosition {
   y: number;
 }
 
-export const useDraggable = (initialPosition: IPosition = { x: 100, y: 100 }) => {
-  const [position, setPosition] = useState<IPosition>(initialPosition);
+export const useDraggable = (position: IPosition, onPositionChange: (position: IPosition) => void) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<IPosition>({ x: 0, y: 0 });
 
@@ -22,7 +21,7 @@ export const useDraggable = (initialPosition: IPosition = { x: 100, y: 100 }) =>
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging) {
-      setPosition({
+      onPositionChange({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
       });
@@ -45,7 +44,6 @@ export const useDraggable = (initialPosition: IPosition = { x: 100, y: 100 }) =>
   }, [isDragging]);
 
   return {
-    position,
     isDragging,
     handleMouseDown
   };
