@@ -1,25 +1,22 @@
 import React from 'react';
 import { IPanelOptions } from '../types';
-import { formatDuration } from '../utils';
 import { useDraggable } from '../hooks/useDraggable';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { PanelHeader } from './PanelHeader';
+import { ColorList } from './ColorList';
 
 interface IPanelProps extends IPanelOptions {
-  onRefresh: () => void;
-  onToggleCollapse: () => void;
 }
 
 export const Panel: React.FC<IPanelProps> = ({
-  isCollapsed,
   grandTotal,
   sortedColors,
   colorMap,
   colorIdToRgb,
-  onRefresh,
-  onToggleCollapse,
 }) => {
   const [position, setPosition] = useLocalStorage<{ x: number; y: number }>('supercal_panel_position', { x: 100, y: 100 });
   const { handleMouseDown } = useDraggable(position, setPosition);
+  const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>('supercal_panel_collapsed', false);
 
   return (
     <div
@@ -44,121 +41,18 @@ export const Panel: React.FC<IPanelProps> = ({
       }}
       onMouseDown={(e) => handleMouseDown(e, 'drag-handle')}
     >
-      <div className="drag-handle" style={{
-        padding: '8px 12px',
-        background: '#f1f3f4',
-        borderTopLeftRadius: '8px',
-        borderTopRightRadius: '8px',
-        cursor: 'grab',
-        borderBottom: '1px solid #dadce0',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        userSelect: 'none',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <img
-            src={chrome.runtime.getURL('icon48.png')}
-            width={16}
-            height={16}
-            style={{ marginRight: '8px' }}
-            alt="Supercal logo"
-          />
-          <div style={{ fontWeight: 'bold' }}>Supercal (hello!)</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', color: '#1a73e8', marginRight: '8px' }}>API Data</span>
-          <div
-            className="refresh-button"
-            onClick={onRefresh}
-            style={{
-              cursor: 'pointer',
-              padding: '4px',
-              marginRight: '4px',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              fontSize: '14px',
-            }}
-            title="Refresh data"
-          >
-            ↻
-          </div>
-          <div
-            className="collapse-toggle"
-            onClick={onToggleCollapse}
-            style={{
-              cursor: 'pointer',
-              padding: '4px',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            {isCollapsed ? '▼' : '▲'}
-          </div>
-        </div>
-      </div>
-      <div
-        className="card-body"
-        style={{
-          padding: '12px',
-          display: isCollapsed ? 'none' : 'block',
-          userSelect: 'text',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ fontWeight: 500, marginRight: '8px' }}>Total foo:</div>
-          <div style={{ fontWeight: 'bold' }}>{formatDuration(grandTotal)}</div>
-        </div>
-        {sortedColors.map(([colorKey, minutes]) => {
-          const displayColor = colorIdToRgb?.get(colorKey) || 'rgb(3, 155, 229)';
-          const colorName = colorMap?.get(colorKey)?.id || 'Unknown color';
-          const percentage = Math.round((minutes / grandTotal) * 100);
-
-          return (
-            <div
-              key={colorKey}
-              className="color-category"
-              style={{
-                marginBottom: '10px',
-                paddingBottom: '8px',
-                borderBottom: '1px solid #f1f3f4',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  margin: '4px 0',
-                  position: 'relative',
-                  justifyContent: 'space-between',
-                }}
-                title={colorName}
-              >
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      background: displayColor,
-                      marginRight: '8px',
-                      borderRadius: '2px',
-                    }}
-                  />
-                  <div>{colorName}</div>
-                </div>
-                <div style={{ fontWeight: 500 }}>
-                  {formatDuration(minutes)} ({percentage}%)
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <PanelHeader
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+      />
+      {!isCollapsed && (
+        <ColorList
+          sortedColors={sortedColors}
+          colorMap={colorMap}
+          colorIdToRgb={colorIdToRgb}
+          grandTotal={grandTotal}
+        />
+      )}
     </div>
   );
 }; 
