@@ -36,5 +36,7 @@ module.exports = {
   },
   optimization: {
     splitChunks: false,
+    usedExports: true,
+    // minimize: true,
   },
 }; 

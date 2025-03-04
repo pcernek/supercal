@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "A Google Chrome extension that augments Google Calendar.",
   "scripts": {
-    "dev": "webpack --watch",
+    "watch": "webpack --watch",
     "build": "webpack --mode production",
     "tsc": "tsc --noEmit",
     "clean": "rm -rf dist && mkdir dist"
