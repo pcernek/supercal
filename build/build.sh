@@ -1,15 +1,24 @@
 #!/bin/bash
 
+set -e
+
 # Main build script for Supercal extension
 
 # Set directories
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DIST_DIR="$ROOT_DIR/dist"
+MANIFEST_TEMPLATE="$ROOT_DIR/manifest.template.json"
 
-# Check if jq is available
-if ! command -v jq &> /dev/null; then
-  echo "Error: jq is required but not found in PATH"
-  echo "Please install jq to continue"
-  exit 1
+# Check for required tools
+command -v jq >/dev/null 2>&1 || { echo "jq is required but not installed. Aborting." >&2; exit 1; }
+command -v node >/dev/null 2>&1 || { echo "Node.js is required but not installed. Aborting." >&2; exit 1; }
+command -v npm >/dev/null 2>&1 || { echo "npm is required but not installed. Aborting." >&2; exit 1; }
+
+# Install dependencies if node_modules doesn't exist
+if [ ! -d "$ROOT_DIR/node_modules" ]; then
+  echo "Installing dependencies..."
+  cd "$ROOT_DIR"
+  npm install
 fi
 
 # Parse command line arguments
@@ -64,14 +73,15 @@ fi
 
 # Define file paths - centralized in one place
 SOURCE_FILES=("$ROOT_DIR/src/"*)
-MANIFEST_TEMPLATE="$ROOT_DIR/manifest.template.json"
-CONFIG_FILE="$ROOT_DIR/config/config.${ENVIRONMENT}.json"
 ICON_FILES=(
   "$ROOT_DIR/assets/icons/icon16.png"
   "$ROOT_DIR/assets/icons/icon48.png"
   "$ROOT_DIR/assets/icons/icon128.png"
 )
-MANIFEST_FILE="$ROOT_DIR/manifest.json"
+HTML_FILES=(
+  "$ROOT_DIR/src/popup.html"
+  "$ROOT_DIR/src/options.html"
+)
 
 # Files to watch for changes
 WATCH_FILES=(
@@ -79,39 +89,26 @@ WATCH_FILES=(
   "$MANIFEST_TEMPLATE"
   "$CONFIG_FILE"
   "${ICON_FILES[@]}"
+  "${HTML_FILES[@]}"
+  "$ROOT_DIR/package.json"
+  "$ROOT_DIR/tsconfig.json"
+  "$ROOT_DIR/webpack.config.js"
 )
 
 # Function to copy files to the destination directory
 copy_extension_files() {
   local DEST_DIR=$1
+  local CLIENT_ID=$2
   
-  # Copy source files
-  cp -r "${SOURCE_FILES[@]}" "$DEST_DIR/"
-  
-  # Copy manifest and icons
-  cp "$MANIFEST_FILE" "$DEST_DIR/"
-  cp "${ICON_FILES[@]}" "$DEST_DIR/"
-}
-
-# Function to generate manifest.json from template
-generate_manifest() {
-  local ENV=$1
-  local ENV_CONFIG_FILE="$ROOT_DIR/config/config.${ENV}.json"
-  local CLIENT_ID=$(jq -r '.client_id' "$ENV_CONFIG_FILE")
-  
-  # Check if client ID was successfully extracted
-  if [ -z "$CLIENT_ID" ] || [ "$CLIENT_ID" == "null" ]; then
-    echo "Error: Failed to extract client_id from config file"
-    exit 1
-  fi
-  
-  echo "Using ${ENV} client ID: $CLIENT_ID"
-  
-  # Generate manifest.json from template
+  # Generate manifest.json in the destination directory
   cat "$MANIFEST_TEMPLATE" | \
-    sed "s/{{CLIENT_ID}}/$CLIENT_ID/g" > "$MANIFEST_FILE"
+    sed "s/{{CLIENT_ID}}/$CLIENT_ID/g" > "$DEST_DIR/manifest.json"
   
-  echo "Generated manifest.json with ${ENV} client ID"
+  # Copy icons
+  cp "${ICON_FILES[@]}" "$DEST_DIR/"
+  
+  # Copy HTML files
+  cp "${HTML_FILES[@]}" "$DEST_DIR/"
 }
 
 # Function to get hash of source files
@@ -126,11 +123,27 @@ build_extension() {
     DIST_DIR="$ROOT_DIR/dist/unpacked"
     mkdir -p "$DIST_DIR"
     
-    # Generate manifest with development client ID
-    generate_manifest "dev"
+    # Get development client ID
+    CLIENT_ID=$(jq -r '.client_id' "$ROOT_DIR/config/config.dev.json")
     
-    # Copy files to dist directory
-    copy_extension_files "$DIST_DIR"
+    # Clean previous build
+    echo "Cleaning previous build..."
+    cd "$ROOT_DIR" && npm run clean
+    
+    # Build using Webpack
+    echo "Building with Webpack..."
+    cd "$ROOT_DIR" && npm run build
+    
+    # Ensure the unpacked directory exists
+    mkdir -p "$DIST_DIR"
+    
+    # Copy all built files from webpack output to the final directory
+    echo "Copying built files..."
+    cp -r "$ROOT_DIR/dist/js/"* "$DIST_DIR/"
+    
+    # Copy extension files (manifest, icons, HTML)
+    echo "Copying extension files..."
+    copy_extension_files "$DIST_DIR" "$CLIENT_ID"
     
     echo "Build completed for development environment"
     echo "Load the unpacked extension from: $DIST_DIR"
@@ -139,11 +152,27 @@ build_extension() {
     ZIP_FILE="$ROOT_DIR/dist/supercal.zip"
     mkdir -p "$DIST_DIR"
     
-    # Generate manifest with production client ID
-    generate_manifest "prod"
+    # Get production client ID
+    CLIENT_ID=$(jq -r '.client_id' "$ROOT_DIR/config/config.prod.json")
     
-    # Copy files to dist directory
-    copy_extension_files "$DIST_DIR"
+    # Clean previous build
+    echo "Cleaning previous build..."
+    cd "$ROOT_DIR" && npm run clean
+    
+    # Build using Webpack
+    echo "Building with Webpack..."
+    cd "$ROOT_DIR" && npm run build
+    
+    # Ensure the production directory exists
+    mkdir -p "$DIST_DIR"
+    
+    # Copy all built files from webpack output to the final directory
+    echo "Copying built files..."
+    cp -r "$ROOT_DIR/dist/js/"* "$DIST_DIR/"
+    
+    # Copy extension files (manifest, icons, HTML)
+    echo "Copying extension files..."
+    copy_extension_files "$DIST_DIR" "$CLIENT_ID"
     
     # Create ZIP file for Chrome Web Store submission
     rm -f "$ZIP_FILE"
@@ -162,14 +191,5 @@ build_extension
 if [[ "$WATCH_MODE" == true ]]; then
   echo ""
   echo "Watching for changes (Ctrl+C to stop)..."
-  LAST_HASH=$(get_files_hash)
-  while true; do
-    CURRENT_HASH=$(get_files_hash)
-    if [ "$CURRENT_HASH" != "$LAST_HASH" ]; then
-      echo "Changes detected, rebuilding..."
-      build_extension
-      LAST_HASH=$CURRENT_HASH
-    fi
-    sleep 2
-  done
+  cd "$ROOT_DIR" && npm run dev
 fi 

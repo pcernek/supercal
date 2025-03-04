@@ -157,11 +157,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 });
-
-// Handle installation
-chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason === 'install') {
-    // Open options page on install to guide setup
-    chrome.tabs.create({ url: 'options.html' });
-  }
-}); 

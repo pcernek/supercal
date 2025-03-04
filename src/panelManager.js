@@ -1,4 +1,4 @@
-import { generatePanelHTML } from './panel-template.js';
+import { generatePanelHTML } from './panelTemplate.js';
 
 /**
  * Creates or updates the panel with calendar data

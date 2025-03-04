@@ -8,15 +8,27 @@
     "48": "icon48.png",
     "128": "icon128.png"
   },
-  "web_accessible_resources": [{
-    "resources": ["icon48.png"],
-    "matches": ["https://calendar.google.com/*"]
-  }],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icon48.png"
+      ],
+      "matches": [
+        "https://calendar.google.com/*"
+      ]
+    }
+  ],
   "content_scripts": [
     {
-      "matches": ["https://calendar.google.com/*"],
-      "js": ["content.js", "utils.js", "panel-template.js", "panel-manager.js"],
-      "type": "module"
+      "matches": [
+        "https://calendar.google.com/*"
+      ],
+      "js": [
+        "content.js",
+        "utils.js",
+        "panelTemplate.js",
+        "panelManager.js"
+      ]
     }
   ],
   "permissions": [
@@ -24,8 +36,7 @@
     "storage"
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "oauth2": {
     "client_id": "{{CLIENT_ID}}",
@@ -41,4 +52,4 @@
       "128": "icon128.png"
     }
   }
-} 
+}

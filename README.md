@@ -16,34 +16,57 @@ A Google Chrome extension that augments Google Calendar.
 
 ## Development
 
+### Prerequisites
+
+- Node.js (v18 or later)
+- npm or yarn
+- Chrome browser
+
+### Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+### Building
+
+To build the extension:
+
+```bash
+npm run build
+# or
+yarn build
+```
+
+This will create a `dist` directory with the compiled extension files.
+
+### Development Mode
+
+To run in development mode with hot reloading:
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+### Loading the Extension
+
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable "Developer mode" in the top right
+3. Click "Load unpacked" and select the `dist` directory
+4. The extension should now be loaded and ready to use
+
 ### Environment Setup
 
 1. **Configure OAuth Client IDs**
    - For development: Create an OAuth client ID for your local extension ID
    - For production: Create an OAuth client ID for your Chrome Web Store extension ID
    - Update the respective config files (`config/config.dev.json` and `config/config.prod.json`)
-
-2. **Build Scripts**
-   ```bash
-   # Development build
-   ./build/build.sh
-   
-   # Development build with watch mode (auto-rebuild on changes)
-   ./build/build.sh -w
-   
-   # Production build for Chrome Web Store submission
-   ./build/build.sh -e prod
-   ```
-   
-   The watch mode uses a simple file hashing approach to detect changes and doesn't require any external tools.
-
-3. **Testing locally**
-   - Open Chrome and go to `chrome://extensions`
-   - Enable "Developer mode" in the top right
-   - Click "Load unpacked" and select the `dist/unpacked` directory
-   - After making changes and rebuilding, click the refresh icon on the extension card
-
-See `build/README.md` for more detailed build instructions.
 
 ## Installation
 
@@ -74,12 +97,13 @@ For more reliable data access, you can set up Google Calendar API integration:
 
 ## Usage
 
-1. Navigate to [Google Calendar](https://calendar.google.com/) in Chrome
-2. The extension will automatically display a floating panel with time totals
-3. If you've set up the Google Calendar API:
-   - Click the Supercal icon in your browser toolbar
-   - Click "Sign In" to authenticate with Google
-   - Select a date range and click "Fetch Calendar Data"
+1. Click the Supercal icon in your Chrome toolbar
+2. Sign in with your Google account
+3. Navigate to Google Calendar
+4. The Supercal panel will appear showing your calendar time breakdown
+5. Drag the panel to reposition it
+6. Click the arrow to collapse/expand the panel
+7. Click the refresh button to update the data
 
 ## How It Works
 
@@ -96,4 +120,4 @@ Supercal only accesses your Google Calendar data with your permission. Your data
 
 ## License
 
-MIT
+ISC

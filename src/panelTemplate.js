@@ -42,7 +42,7 @@ function generatePanelHTML(options) {
              height="16" 
              style="margin-right: 8px;"
         >
-        <div style="font-weight: bold;">Supercal</div>
+        <div style="font-weight: bold;">Supercal (hello!)</div>
       </div>
       <div style="display: flex; align-items: center;">
         <span style="font-size: 12px; color: #1a73e8; margin-right: 8px;">API Data</span>
