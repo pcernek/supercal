@@ -1,2 +1,6 @@
 export * from './types';
-export * from './MessageRouter'; 
+export * from './getAuthTokenHandler';
+export * from './getCalendarEventsHandler';
+export * from './signOutHandler';
+export * from './MessageRouter';
+export * from './MessageSender'; 

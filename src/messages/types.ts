@@ -1,3 +1,10 @@
+/**
+ * TODO:
+ *  - each message handler should ideally define its own types
+ *  - also its own response types
+ *  - maybe instead of an enum 
+ */
+
 export enum MessageAction {
   GetAuthToken = 'getAuthToken',
   GetCalendarEvents = 'getCalendarEvents',
