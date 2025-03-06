@@ -37,17 +37,6 @@ export interface IPanelState {
   collapsed: boolean;
 }
 
-export interface IAuthConfig {
-  client_id: string;
-  scopes: string[];
-  redirect_uri: string;
-}
-
-export interface IMessage {
-  action: string;
-  [key: string]: any;
-}
-
 export interface IChromeResponse {
   success: boolean;
   data?: any;
