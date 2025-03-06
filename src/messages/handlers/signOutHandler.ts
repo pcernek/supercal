@@ -1,19 +1,7 @@
-import { IMessageResponse, ISignOutPayload, MessageHandler } from './types';
-
-export const signOutHandler: MessageHandler<ISignOutPayload> = async (
-): Promise<IMessageResponse> => {
-  try {
-    const token = await getAuthToken();
-    await revokeToken(token);
-    await clearAllCachedAuthTokens();
-
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+export const signOutHandler = async (): Promise<void> => {
+  const token = await getAuthToken();
+  await revokeToken(token);
+  await clearAllCachedAuthTokens();
 };
 
 async function getAuthToken(): Promise<string | undefined> {

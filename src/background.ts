@@ -1,10 +1,11 @@
-import { MessagePayload, MessageRouter } from './messages';
+import { IMessagePayload, MessageRouter } from './messages';
 
 // Listen for messages from content script and popup
-chrome.runtime.onMessage.addListener((message: MessagePayload, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
   (async () => {
     try {
-      const response = await MessageRouter.handleMessage(message);
+      // TODO: Add validation
+      const response = await MessageRouter.handleMessage(message as IMessagePayload);
       sendResponse(response);
     } catch (error) {
       console.error('Error in message handler:', error);

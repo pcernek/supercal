@@ -1,25 +1,25 @@
-import { IGetCalendarEventsPayload, IMessageResponse, MessageHandler } from './types';
+export interface IGetCalendarEventsPayload {
+  timeMin: string;
+  timeMax: string;
+}
 
-export const getCalendarEventsHandler: MessageHandler<IGetCalendarEventsPayload> = async (
-  payload
-): Promise<IMessageResponse> => {
-  try {
-    const [events, colors] = await Promise.all([
-      fetchCalendarEvents(payload.timeMin, payload.timeMax),
-      fetchColorDefinitions()
-    ]);
+export interface IGetCalendarEventsResponse {
+  events: unknown[]; // TODO
+  colors: Map<string, unknown>; // TODO
+}
 
-    return {
-      success: true,
-      data: events,
-      colors
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+export const getCalendarEventsHandler = async (
+  payload: IGetCalendarEventsPayload
+): Promise<IGetCalendarEventsResponse> => {
+  const [events, colors] = await Promise.all([
+    fetchCalendarEvents(payload.timeMin, payload.timeMax),
+    fetchColorDefinitions()
+  ]);
+
+  return {
+    events,
+    colors
+  };
 };
 
 async function fetchColorDefinitions() {

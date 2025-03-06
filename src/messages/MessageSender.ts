@@ -1,11 +1,5 @@
-import {
-  MessageAction,
-  MessagePayload,
-  IMessageResponse,
-  IGetAuthTokenPayload,
-  IGetCalendarEventsPayload,
-  ISignOutPayload
-} from './types';
+import { IGetAuthTokenPayload, IGetAuthTokenResponse, IGetCalendarEventsPayload, IGetCalendarEventsResponse } from './handlers';
+import { IGenericMessage, IMessageResponse, MessageAction, IMessagePayload } from './types';
 
 /**
  * MessageSender handles sending messages to the background script
@@ -17,9 +11,9 @@ export class MessageSender {
    * @param message The message payload to send
    * @returns A promise that resolves to the response from the background script
    */
-  private static async sendMessage<T extends MessagePayload>(message: T): Promise<IMessageResponse> {
+  private static async sendMessage<R>(message: IMessagePayload): Promise<IMessageResponse<R>> {
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (response: IMessageResponse) => {
+      chrome.runtime.sendMessage(message, (response: IMessageResponse<R>) => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));
           return;
@@ -40,10 +34,12 @@ export class MessageSender {
    * @param interactive Whether to show an interactive login prompt if needed
    * @returns A promise that resolves to the auth token response
    */
-  public static async getAuthToken(interactive = false): Promise<IMessageResponse> {
-    const message: IGetAuthTokenPayload = {
+  public static async getAuthToken(interactive = false): Promise<IMessageResponse<IGetAuthTokenResponse>> {
+    const message: IGenericMessage<MessageAction.GetAuthToken, IGetAuthTokenPayload> = {
       action: MessageAction.GetAuthToken,
-      interactive
+      payload: {
+        interactive
+      }
     };
 
     return this.sendMessage(message);
@@ -55,11 +51,13 @@ export class MessageSender {
    * @param timeMax The end time for the event range (ISO string)
    * @returns A promise that resolves to the calendar events response
    */
-  public static async getCalendarEvents(timeMin: string, timeMax: string): Promise<IMessageResponse> {
-    const message: IGetCalendarEventsPayload = {
+  public static async getCalendarEvents(timeMin: string, timeMax: string): Promise<IMessageResponse<IGetCalendarEventsResponse>> {
+    const message: IGenericMessage<MessageAction.GetCalendarEvents, IGetCalendarEventsPayload> = {
       action: MessageAction.GetCalendarEvents,
-      timeMin,
-      timeMax
+      payload: {
+        timeMin,
+        timeMax
+      }
     };
 
     return this.sendMessage(message);
@@ -69,11 +67,10 @@ export class MessageSender {
    * Signs the user out by revoking the auth token
    * @returns A promise that resolves to the sign out response
    */
-  public static async signOut(): Promise<IMessageResponse> {
-    const message: ISignOutPayload = {
-      action: MessageAction.SignOut
-    };
-
-    return this.sendMessage(message);
+  public static async signOut(): Promise<IMessageResponse<void>> {
+    return this.sendMessage({
+      action: MessageAction.SignOut,
+      payload: undefined
+    });
   }
-} 
+}

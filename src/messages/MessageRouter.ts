@@ -1,37 +1,33 @@
 import {
-  MessageAction,
-  MessagePayload,
   IMessageResponse,
+  ISuccessResponse,
+  IErrorResponse,
+  IMessagePayload,
 } from './types';
-import { getAuthTokenHandler } from './getAuthTokenHandler';
-import { getCalendarEventsHandler } from './getCalendarEventsHandler';
-import { signOutHandler } from './signOutHandler';
+import { getAuthTokenHandler, getCalendarEventsHandler, signOutHandler } from './handlers';
+
+const successResponse = <T>(data: T): ISuccessResponse<T> => ({ success: true, data });
+const errorResponse = (error: string): IErrorResponse => ({ success: false, error });
 
 export class MessageRouter {
-  public static async handleMessage(message: MessagePayload): Promise<IMessageResponse> {
+  public static async handleMessage(message: IMessagePayload): Promise<IMessageResponse<unknown>> {
     try {
       switch (message.action) {
-        case MessageAction.GetAuthToken:
-          return await getAuthTokenHandler(message);
+        case 'getAuthToken':
+          return successResponse(await getAuthTokenHandler(message.payload));
 
-        case MessageAction.GetCalendarEvents:
-          return await getCalendarEventsHandler(message);
+        case 'getCalendarEvents':
+          return successResponse(await getCalendarEventsHandler(message.payload));
 
-        case MessageAction.SignOut:
-          return await signOutHandler(message);
+        case 'signOut':
+          return successResponse(await signOutHandler());
 
         default:
-          return {
-            success: false,
-            error: `Unknown action: ${(message as any).action}`
-          };
+          return errorResponse(`Unknown action: ${(message as any).action}`);
       }
     } catch (error) {
       console.error('Error in message handler:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
+      return errorResponse(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }
