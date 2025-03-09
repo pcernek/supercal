@@ -6,9 +6,6 @@ module.exports = {
     content: './src/content.tsx',
     background: './src/background.ts',
     popup: './src/popup.tsx',
-    utils: './src/utils.ts',
-    panelTemplate: './src/panelTemplate.js',
-    panelManager: './src/panelManager.js',
   },
   output: {
     path: path.resolve(__dirname, 'dist/js'),

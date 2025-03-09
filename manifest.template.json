@@ -24,10 +24,7 @@
         "https://calendar.google.com/*"
       ],
       "js": [
-        "content.js",
-        "utils.js",
-        "panelTemplate.js",
-        "panelManager.js"
+        "content.js"
       ]
     }
   ],
