@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { IPanelOptions } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAlwaysVisible } from '../hooks/useAlwaysVisible';
 import { PanelHeader } from './PanelHeader';
 import { ColorList } from './ColorList';
+import { LocalStorageKeys } from '../helpers/LocalStorageKeys';
 
 interface IPanelProps extends IPanelOptions {
 }
@@ -15,12 +16,14 @@ export const Panel: React.FC<IPanelProps> = ({
   colorMap,
   colorIdToRgb,
 }) => {
-  const [initialPosition, savePosition] = useLocalStorage<{ x: number; y: number }>('supercal_panel_position', { x: 100, y: 100 });
-  const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>('supercal_panel_collapsed', false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>(LocalStorageKeys.Panel.Collapsed, false);
 
-  const { ref: panelRef, position, setPosition } = useAlwaysVisible({
-    initialPosition,
-    onPositionChange: savePosition,
+  const { position, setPosition } = useAlwaysVisible({
+    ref: panelRef,
+    initialPosition: { x: 100, y: 100 },
+    padding: 20,
+    storageKey: LocalStorageKeys.Panel.Position,
   });
 
   // Use the draggable hook with our position handler

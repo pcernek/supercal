@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
-import { useVisibleArea as useVisibleArea } from './useVisibleArea';
+import { RefObject, useCallback, useEffect } from 'react';
+import { useVisibleArea } from './useVisibleArea';
 import { applyPositionFence } from '../helpers/applyPositionFence';
+import { useLocalStorage } from './useLocalStorage';
 
 interface IPosition {
   x: number;
@@ -8,46 +9,50 @@ interface IPosition {
 }
 
 interface IUseAlwaysVisibleOptions {
-  initialPosition: IPosition;
-  onPositionChange?: (position: IPosition) => void;
+  /**
+   * The ref of the element to be made visible
+   */
+  ref: RefObject<HTMLElement>;
+  /**
+   * The initial position of the element
+   */
+  initialPosition?: IPosition;
+  /**
+   * The padding to apply from the edges of the viewport
+   */
   padding?: number;
+  /**
+   * The key to store the position in local storage
+   */
+  storageKey: string;
 }
 
 /**
  * Hook to ensure an element stays within the viewport.
  */
 export const useAlwaysVisible = ({
-  initialPosition,
-  onPositionChange,
-  padding = 20,
+  ref,
+  initialPosition = { x: 0, y: 0 },
+  padding = 0,
+  storageKey,
 }: IUseAlwaysVisibleOptions) => {
-  // Ref for the element to be made visible
-  const ref = useRef<HTMLDivElement>(null);
-
-  const [position, setPosition] = useState<IPosition>(initialPosition);
+  const [position, setPosition] = useLocalStorage<IPosition>(storageKey, initialPosition);
 
   const visibleArea = useVisibleArea(ref, padding);
-  const visiblePosition = applyPositionFence(position, visibleArea);
 
-  // Update internal position and notify parent if needed
-  const updateVisiblePosition = useCallback((newPosition: IPosition) => {
-    const newVisiblePosition = applyPositionFence(newPosition, visibleArea);;
+  const setVisiblePosition = useCallback((newPosition: IPosition) => {
+    const newVisiblePosition = applyPositionFence(newPosition, visibleArea);
     setPosition(newVisiblePosition);
-    if (onPositionChange) {
-      onPositionChange(newVisiblePosition);
-    }
-  }, [onPositionChange]);
+  }, [setPosition, visibleArea]);
 
-  // Update position when visible area changes
+  // Ensure position is visible on first mount and when visible area changes
   useEffect(() => {
-    if (visibleArea) {
-      updateVisiblePosition(visiblePosition);
-    }
-  }, [visibleArea, visiblePosition, updateVisiblePosition]);
+    setVisiblePosition(position);
+  }, [setVisiblePosition]);
 
   return {
     ref,
-    position: visiblePosition,
-    setPosition: updateVisiblePosition,
+    position,
+    setPosition: setVisiblePosition,
   };
-}; 
+};
