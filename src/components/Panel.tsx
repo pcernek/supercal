@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { useDraggable } from '../hooks/useDraggable';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import { useKeepInViewport } from '../hooks/useKeepInViewport';
-import { PanelHeader } from './PanelHeader';
-import { ColorList } from './ColorList';
 import { LocalStorageKeys } from '../helpers/LocalStorageKeys';
+import { useColorDurations } from '../hooks/useColorDurations';
+import { useDraggable } from '../hooks/useDraggable';
+import { useKeepInViewport } from '../hooks/useKeepInViewport';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { ColorList } from './ColorList';
+import { PanelHeader } from './PanelHeader';
 
 export interface IColorInfo {
   id: string;
@@ -12,19 +13,16 @@ export interface IColorInfo {
   foreground: string;
 }
 
-interface IPanelProps {
-  sortedColors: [string, number][];
-  colorMap: Map<string, IColorInfo>;
-  colorIdToRgb: Map<string, string>;
-}
+// interface IPanelProps {
+//   sortedColors: [string, number][];
+//   colorMap: Map<string, IColorInfo>;
+//   colorIdToRgb: Map<string, string>;
+// }
 
-export const Panel: React.FC<IPanelProps> = ({
-  sortedColors,
-  colorMap,
-  colorIdToRgb,
-}) => {
+export const Panel: React.FC = () => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>(LocalStorageKeys.Panel.Collapsed, false);
+  const { colorDurations, isLoading, error } = useColorDurations();
 
   const { position, setPosition } = useKeepInViewport({
     ref: panelRef,
@@ -35,6 +33,7 @@ export const Panel: React.FC<IPanelProps> = ({
 
   // Use the draggable hook with our position handler
   const { handleMouseDown } = useDraggable(position, setPosition);
+
 
   return (
     <div
@@ -50,7 +49,7 @@ export const Panel: React.FC<IPanelProps> = ({
         fontFamily: "'Google Sans',Roboto,Arial,sans-serif",
         boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
         cursor: 'default',
-        width: '250px',
+        width: '200px',
         maxHeight: '80vh',
         overflowY: 'auto',
         left: position.x,
@@ -63,11 +62,21 @@ export const Panel: React.FC<IPanelProps> = ({
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
       {!isCollapsed && (
-        <ColorList
-          sortedColors={sortedColors}
-          colorMap={colorMap}
-          colorIdToRgb={colorIdToRgb}
-        />
+        <>
+          {isLoading && (
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              Loading calendar data...
+            </div>
+          )}
+          {error && (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
+              Error loading calendar data: {error.message || 'Unknown error'}
+            </div>
+          )}
+          {!isLoading && !error && (
+            <ColorList items={colorDurations} />
+          )}
+        </>
       )}
     </div>
   );

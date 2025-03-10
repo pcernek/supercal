@@ -1,4 +1,4 @@
-import { IGetAuthTokenPayload, IGetAuthTokenResponse, IGetCalendarEventsPayload, IGetCalendarEventsResponse } from './handlers';
+import { IFetchCalendarColorsResponse, IGetAuthTokenPayload, IGetAuthTokenResponse, IGetCalendarEventsPayload, IGetCalendarEventsResponse } from './handlers';
 import { IGenericMessage, IMessageResponse, MessageAction, IMessagePayload } from './types';
 
 /**
@@ -43,6 +43,13 @@ export class MessageSender {
     };
 
     return this.sendMessage(message);
+  }
+
+  public static async fetchCalendarColors(): Promise<IMessageResponse<IFetchCalendarColorsResponse>> {
+    return this.sendMessage({
+      action: MessageAction.FetchCalendarColors,
+      payload: undefined
+    });
   }
 
   /**

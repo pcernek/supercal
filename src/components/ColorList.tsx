@@ -1,16 +1,13 @@
 import React from 'react';
 import { formatDuration } from '../utils';
+import { IColorDuration } from '../hooks/useColorDurations';
 
 interface IColorListProps {
-  sortedColors: [string, number][];
-  colorMap: Map<string, { id: string }>;
-  colorIdToRgb: Map<string, string>;
+  items: IColorDuration[];
 }
 
 export const ColorList: React.FC<IColorListProps> = ({
-  sortedColors,
-  colorMap,
-  colorIdToRgb,
+  items
 }) => (
   <div
     className="card-body"
@@ -19,48 +16,35 @@ export const ColorList: React.FC<IColorListProps> = ({
       userSelect: 'text',
     }}
   >
-    {sortedColors.map(([colorKey, minutes]) => {
-      const displayColor = colorIdToRgb?.get(colorKey) || 'rgb(3, 155, 229)';
-      const colorName = colorMap?.get(colorKey)?.id || 'Unknown color';
-
-      return (
-        <div
-          key={colorKey}
-          className="color-category"
-          style={{
-            marginBottom: '10px',
-            paddingBottom: '8px',
-            borderBottom: '1px solid #f1f3f4',
-          }}
-        >
+    {items.map((item) => (
+      <div
+        key={item.label}
+        className="color-category"
+        style={{
+          paddingBottom: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          margin: '4px 0',
+          position: 'relative',
+        }}
+        title={item.label}
+      >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              margin: '4px 0',
-              position: 'relative',
-              justifyContent: 'space-between',
+              width: '12px',
+              height: '12px',
+              background: item.color,
+              marginRight: '8px',
+              borderRadius: '2px',
             }}
-            title={colorName}
-          >
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div
-                style={{
-                  width: '12px',
-                  height: '12px',
-                  background: displayColor,
-                  marginRight: '8px',
-                  borderRadius: '2px',
-                }}
-              />
-              <div>{colorName}</div>
-            </div>
-            <div style={{ fontWeight: 500 }}>
-              {formatDuration(minutes)}
-            </div>
-          </div>
+          />
+          <div>{item.label || ''}</div>
         </div>
-      );
-    })}
+        <div style={{ fontWeight: 500 }}>
+          {formatDuration(item.value)}
+        </div>
+      </div>
+    ))}
   </div>
 ); 

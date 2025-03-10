@@ -4,7 +4,7 @@ import {
   IErrorResponse,
   IMessagePayload,
 } from './types';
-import { getAuthTokenHandler, getCalendarEventsHandler, signOutHandler } from './handlers';
+import { getAuthTokenHandler, fetchCalendarColors, signOutHandler } from './handlers';
 
 const successResponse = <T>(data: T): ISuccessResponse<T> => ({ success: true, data });
 const errorResponse = (error: string): IErrorResponse => ({ success: false, error });
@@ -16,8 +16,8 @@ export class MessageRouter {
         case 'getAuthToken':
           return successResponse(await getAuthTokenHandler(message.payload));
 
-        case 'getCalendarEvents':
-          return successResponse(await getCalendarEventsHandler(message.payload));
+        case 'fetchCalendarColors':
+          return successResponse(await fetchCalendarColors());
 
         case 'signOut':
           return successResponse(await signOutHandler());
