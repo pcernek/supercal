@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { sortBy } from 'lodash-es';
-import { useCalendarEvents } from './useCalendarEvents';
-import { useCalendarColors } from './useCalendarColors';
+import { ICalendarEventParsed } from './useCalendarEvents2';
+import { useCalendarTimeRange2 } from './useCalendarTimeRange2';
+import { useCalendarEvents3 } from './useCalendarEvents3';
 
 export interface IColorDuration {
   color: string;  // RGB color string
@@ -10,99 +11,84 @@ export interface IColorDuration {
 }
 
 export const useColorDurations = () => {
-  const calendarEvents = useCalendarEvents();
-  const { colors: calendarColors, isLoading: isLoadingColors, error: colorsError } = useCalendarColors();
+  // Get the time range from DOM elements with data-eventid
+  // const { timeRange, isLoading: isLoadingTimeRange, error: timeRangeError } = useCalendarTimeRange2();
+  const timeRange = useCalendarTimeRange2();
 
-  const isLoading = isLoadingColors;
-  const error = colorsError;
+  // Add debug logging for timeRange
+  console.log('useColorDurations: timeRange', timeRange);
+
+  // Create default dates if timeRange values are null
+  const defaultTimeMin = new Date();
+  const defaultTimeMax = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+  // Fetch calendar events for the time range
+  const { events: calendarEvents, isLoading: isLoadingEvents, error: eventsError } =
+    useCalendarEvents3(
+      timeRange.timeMin || defaultTimeMin,
+      timeRange.timeMax || defaultTimeMax
+    );
+
+  // Log the actual dates being used
+  console.log('useColorDurations: using dates',
+    'timeMin:', timeRange.timeMin || defaultTimeMin,
+    'timeMax:', timeRange.timeMax || defaultTimeMax);
+
+  const isLoading = isLoadingEvents;
+  const error = eventsError;
 
   const colorDurations = useMemo(() => {
-    if (isLoading || error || !calendarEvents || !calendarColors) {
+    if (isLoading || error || !calendarEvents) {
+      console.log('useColorDurations: no calendar events', isLoading, error, calendarEvents);
       return [];
     }
 
-    // Create a map to track color mappings (RGB value -> color ID)
-    const colorMappings: Map<string, string> = new Map();
+    console.log('useColorDurations: calendarEvents', calendarEvents);
 
-    // Create a map to store color metadata (ID -> {label, displayColor})
-    const colorMetadata: Map<string, { label: string | undefined, displayColor: string }> = new Map();
-
-    // Process event colors
-    if (calendarColors.event) {
-      Object.entries(calendarColors.event).forEach(([id, colorInfo]) => {
-        const colorId = `event-${id}`;
-        // Map both foreground and background colors to the same color ID
-        colorMappings.set(colorInfo.background.toLowerCase(), colorId);
-        colorMappings.set(colorInfo.foreground.toLowerCase(), colorId);
-        // Store metadata using the background color as the display color
-        colorMetadata.set(colorId, {
-          label: `Event ${id}`,
-          displayColor: colorInfo.background
-        });
-      });
-    }
-
-    // Process calendar colors
-    if (calendarColors.calendar) {
-      Object.entries(calendarColors.calendar).forEach(([id, colorInfo]) => {
-        const colorId = `calendar-${id}`;
-        // Map both foreground and background colors to the same color ID
-        colorMappings.set(colorInfo.background.toLowerCase(), colorId);
-        colorMappings.set(colorInfo.foreground.toLowerCase(), colorId);
-        // Store metadata using the background color as the display color
-        colorMetadata.set(colorId, {
-          label: `Calendar ${id}`,
-          displayColor: colorInfo.background
-        });
-      });
-    }
-
-    // Create a map to aggregate durations by color ID
-    const durationsByColorId: Map<string, number> = new Map();
+    // Create a map to aggregate durations by color
+    const durationsByColor: Map<string, { total: number, calendarNames: Set<string> }> = new Map();
 
     // Process all calendar events
-    calendarEvents.forEach(event => {
-      const { color, durationMinutes } = event;
+    calendarEvents.forEach((event: ICalendarEventParsed) => {
+      const { hexColor, durationMinutes, calendarSummary } = event;
 
-      // Try to find a color ID for this RGB value
-      const colorId = colorMappings.get(color.toLowerCase());
+      // Get or create the entry for this color
+      const colorData = durationsByColor.get(hexColor) || { total: 0, calendarNames: new Set<string>() };
 
-      if (colorId) {
-        // Add duration to existing color ID or create new entry
-        const currentDuration = durationsByColorId.get(colorId) || 0;
-        durationsByColorId.set(colorId, currentDuration + durationMinutes);
-      } else {
-        // If no mapping found, use the original color as the ID
-        const currentDuration = durationsByColorId.get(color) || 0;
-        durationsByColorId.set(color, currentDuration + durationMinutes);
+      // Add duration to the total
+      colorData.total += durationMinutes;
 
-        // Also add metadata for unmapped colors
-        if (!colorMetadata.has(color)) {
-          colorMetadata.set(color, {
-            label: undefined,
-            displayColor: color
-          });
-        }
+      // Add calendar name to the set if available
+      if (calendarSummary) {
+        colorData.calendarNames.add(calendarSummary);
       }
+
+      // Update the map
+      durationsByColor.set(hexColor, colorData);
     });
 
     // Convert map to array of IColorDuration objects
     return sortBy(
-      Array.from(durationsByColorId.entries())
-        .map(([colorId, totalMinutes]) => {
-          const metadata = colorMetadata.get(colorId);
+      Array.from(durationsByColor.entries())
+        .map(([color, data]) => {
+          // Create a label from calendar names if available
+          // const calendarNames = Array.from(data.calendarNames);
+          // const label = calendarNames.length > 0
+          //   ? calendarNames.join(', ')
+          //   : undefined;
+          const label = ''
 
           return {
-            color: metadata ? metadata.displayColor : colorId,
-            label: metadata ? metadata.label : undefined,
-            value: totalMinutes
+            color,
+            label,
+            value: data.total
           };
         })
         .filter((colorDuration: IColorDuration) => colorDuration.value > 0),
       // Sort by value in descending order
       (colorDuration: IColorDuration) => -colorDuration.value
     );
-  }, [calendarEvents, calendarColors, isLoading, error]);
+  }, [calendarEvents, isLoading, error]);
 
-  return { colorDurations, isLoading, error };
+  return { colorDurations, isLoading, error, timeRange };
 };

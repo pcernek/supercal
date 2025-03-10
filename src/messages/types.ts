@@ -1,9 +1,16 @@
-import { IGetAuthTokenPayload, IGetCalendarEventsPayload } from './handlers';
+import { IGetAuthTokenPayload, IFetchCalendarEventsPayload } from './handlers';
+
+export interface IGetCalendarEventByIdPayload {
+  calendarId: string;
+  eventId: string;
+}
 
 export enum MessageAction {
   FetchCalendarColors = 'fetchCalendarColors',
+  FetchCalendarList = 'fetchCalendarList',
   GetAuthToken = 'getAuthToken',
   GetCalendarEvents = 'getCalendarEvents',
+  GetCalendarEventById = 'getCalendarEventById',
   SignOut = 'signOut',
 }
 
@@ -12,9 +19,11 @@ export type IGenericMessage<T extends MessageAction, PayloadType> = {
   payload: PayloadType;
 }
 
-export type IMessagePayload = IGenericMessage<MessageAction.GetAuthToken, IGetAuthTokenPayload> | 
-  IGenericMessage<MessageAction.GetCalendarEvents, IGetCalendarEventsPayload> | 
-  IGenericMessage<MessageAction.FetchCalendarColors, undefined> | 
+export type IMessagePayload = IGenericMessage<MessageAction.GetAuthToken, IGetAuthTokenPayload> |
+  IGenericMessage<MessageAction.FetchCalendarColors, undefined> |
+  IGenericMessage<MessageAction.FetchCalendarList, undefined> |
+  IGenericMessage<MessageAction.GetCalendarEvents, IFetchCalendarEventsPayload> |
+  IGenericMessage<MessageAction.GetCalendarEventById, IGetCalendarEventByIdPayload> |
   IGenericMessage<MessageAction.SignOut, undefined>;
 
 export interface ISuccessResponse<T> {

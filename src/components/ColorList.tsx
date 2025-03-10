@@ -16,35 +16,49 @@ export const ColorList: React.FC<IColorListProps> = ({
       userSelect: 'text',
     }}
   >
-    {items.map((item) => (
+    {items.length === 0 ? (
       <div
-        key={item.label}
-        className="color-category"
+        className="empty-state"
         style={{
-          paddingBottom: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          margin: '4px 0',
-          position: 'relative',
+          textAlign: 'center',
+          padding: '16px',
+          color: '#666',
+          fontStyle: 'italic'
         }}
-        title={item.label}
       >
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div
-            style={{
-              width: '12px',
-              height: '12px',
-              background: item.color,
-              marginRight: '8px',
-              borderRadius: '2px',
-            }}
-          />
-          <div>{item.label || ''}</div>
-        </div>
-        <div style={{ fontWeight: 500 }}>
-          {formatDuration(item.value)}
-        </div>
+        Failed to load events from calendar
       </div>
-    ))}
+    ) : (
+      items.map((item) => (
+        <div
+          key={item.color + (item.label || '')}
+          className="color-category"
+          style={{
+            paddingBottom: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            margin: '4px 0',
+            position: 'relative',
+          }}
+          title={item.label}
+        >
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                width: '12px',
+                height: '12px',
+                background: item.color,
+                marginRight: '8px',
+                borderRadius: '2px',
+              }}
+            />
+            <div>{item.label || ''}</div>
+          </div>
+          <div style={{ fontWeight: 500 }}>
+            {formatDuration(item.value)}
+          </div>
+        </div>
+      ))
+    )}
   </div>
 ); 

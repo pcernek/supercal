@@ -13,12 +13,6 @@ export interface IColorInfo {
   foreground: string;
 }
 
-// interface IPanelProps {
-//   sortedColors: [string, number][];
-//   colorMap: Map<string, IColorInfo>;
-//   colorIdToRgb: Map<string, string>;
-// }
-
 export const Panel: React.FC = () => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>(LocalStorageKeys.Panel.Collapsed, false);
