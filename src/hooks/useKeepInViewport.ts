@@ -30,7 +30,7 @@ interface IUseAlwaysVisibleOptions {
 /**
  * Hook to ensure an element stays within the viewport.
  */
-export const useAlwaysVisible = ({
+export const useKeepInViewport = ({
   ref,
   initialPosition = { x: 0, y: 0 },
   padding = 0,

@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useDraggable } from '../hooks/useDraggable';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { useAlwaysVisible } from '../hooks/useAlwaysVisible';
+import { useKeepInViewport } from '../hooks/useKeepInViewport';
 import { PanelHeader } from './PanelHeader';
 import { ColorList } from './ColorList';
 import { LocalStorageKeys } from '../helpers/LocalStorageKeys';
@@ -26,7 +26,7 @@ export const Panel: React.FC<IPanelProps> = ({
   const panelRef = useRef<HTMLDivElement>(null);
   const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>(LocalStorageKeys.Panel.Collapsed, false);
 
-  const { position, setPosition } = useAlwaysVisible({
+  const { position, setPosition } = useKeepInViewport({
     ref: panelRef,
     initialPosition: { x: 100, y: 100 },
     padding: 20,
