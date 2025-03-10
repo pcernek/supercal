@@ -6,6 +6,8 @@ import { useKeepInViewport } from '../hooks/useKeepInViewport';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { ColorList } from './ColorList';
 import { PanelHeader } from './PanelHeader';
+import { useUrl } from '../hooks/useUrl';
+import { isValidCalendarView } from '../helpers';
 
 export interface IColorInfo {
   id: string;
@@ -18,6 +20,9 @@ export const Panel: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>(LocalStorageKeys.Panel.Collapsed, false);
   const { colorDurations, isLoading, error } = useColorDurations();
 
+  const url = useUrl();
+  console.log('panel: url', url);
+
   const { position, setPosition } = useKeepInViewport({
     ref: panelRef,
     initialPosition: { x: 100, y: 100 },
@@ -28,6 +33,9 @@ export const Panel: React.FC = () => {
   // Use the draggable hook with our position handler
   const { handleMouseDown } = useDraggable(position, setPosition);
 
+  if (!isValidCalendarView(url)) {
+    return null;
+  }
 
   return (
     <div

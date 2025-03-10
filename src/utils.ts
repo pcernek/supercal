@@ -1,17 +1,5 @@
 import { IDateRange } from './types';
 
-export function hexToRgb(hex: string): string {
-  // Remove the hash if it exists
-  hex = hex.replace(/^#/, '');
-
-  // Parse the hex values
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
 export function formatDuration(minutes: number): string {
   const hours = minutes / 60;
   return `${hours.toFixed(2)} h`;
@@ -28,10 +16,6 @@ export function areDateRangesSame(range1: IDateRange, range2: IDateRange): boole
 
   return range1.startDate.getTime() === range2.startDate.getTime() &&
     range1.endDate.getTime() === range2.endDate.getTime();
-}
-
-export function isValidCalendarView(): boolean {
-  return window.location.pathname.match(/\/(week|day|month)$/) !== null;
 }
 
 export function detectVisibleDateRange(): IDateRange {
