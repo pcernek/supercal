@@ -3,6 +3,7 @@ import { ICalendarEvent, IFetchCalendarEventsPayload } from '../messages/handler
 import { MessageSender } from '../messages/MessageSender';
 import { useCalendarList } from './useCalendarList';
 import { useCalendarColors } from './useCalendarColors';
+import { QueryKeys } from '../helpers';
 
 export interface ICalendarEventParsed extends ICalendarEvent {
   hexColor: string;
@@ -24,7 +25,7 @@ export function useCalendarEvents2(timeMin: Date, timeMax: Date) {
 
   // Then fetch events from all calendars
   const { data: events, isLoading: isLoadingEvents, error: eventsError } = useQuery<ICalendarEventParsed[]>({
-    queryKey: ['calendarEvents', timeMin, timeMax, calendars],
+    queryKey: [QueryKeys.CalendarEvents, timeMin, timeMax, calendars],
     queryFn: async () => {
       // Don't fetch if we don't have calendars yet
       if (!calendars || calendars.length === 0) {

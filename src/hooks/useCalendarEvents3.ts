@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { ICalendarEventParsed, useCalendarEvents2 } from './useCalendarEvents2';
+import { useQueryClient } from '@tanstack/react-query';
+import { QueryKeys } from '../helpers';
 
 export function useCalendarEvents3(timeMin: Date, timeMax: Date) {
   const [events, setEvents] = useState<ICalendarEventParsed[]>([]);
+  // Add a state to track DOM changes
+  const [domChangeCounter, setDomChangeCounter] = useState(0);
+
+  // Get access to the query client for cache invalidation
+  const queryClient = useQueryClient();
 
   // Fetch calendar events for the time range
   const { events: loadedEvents, isLoading, error } =
@@ -10,6 +17,53 @@ export function useCalendarEvents3(timeMin: Date, timeMax: Date) {
       timeMin,
       timeMax
     );
+
+  // Set up a MutationObserver to detect changes in the DOM within data-view-heading
+  useEffect(() => {
+    console.log('Setting up MutationObserver for data-view-heading');
+
+    // Function to find the heading element
+    const findHeadingElement = () => {
+      return document.querySelector('div[data-view-heading]');
+    };
+
+    const headingElement = findHeadingElement();
+    if (!headingElement) {
+      console.log('No element with data-view-heading found');
+      return;
+    }
+
+    // Create a MutationObserver to watch for changes
+    const observer = new MutationObserver((mutations) => {
+      console.log('MutationObserver detected changes in data-view-heading', mutations);
+
+      // Invalidate the calendar events query to force a refetch
+      queryClient.invalidateQueries({ queryKey: [QueryKeys.CalendarEvents] });
+      console.log('Invalidated calendar events query cache');
+
+      // Increment the counter to trigger a re-render
+      setDomChangeCounter(prev => prev + 1);
+    });
+
+    // Start observing the heading element
+    observer.observe(headingElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true
+    });
+
+    // Clean up the observer when the component unmounts
+    return () => {
+      console.log('Disconnecting MutationObserver');
+      observer.disconnect();
+    };
+  }, [queryClient]); // Add queryClient as a dependency
+
+  // Clear events when loadedEvents changes to prevent double-counting
+  useEffect(() => {
+    setEvents([]);
+  }, [loadedEvents]);
 
   // grab event IDs from DOM
   useEffect(() => {
@@ -59,7 +113,7 @@ export function useCalendarEvents3(timeMin: Date, timeMax: Date) {
 
     console.log('useCalendarEvents3: parsedEvents', parsedEvents);
     setEvents(parsedEvents);
-  }, [isLoading, error, loadedEvents]);
+  }, [isLoading, error, loadedEvents, domChangeCounter]); // Added domChangeCounter as a dependency
 
   return { events, isLoading, error };
 }
