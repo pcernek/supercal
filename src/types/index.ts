@@ -1,9 +1,3 @@
-export interface IColorInfo {
-  id: string;
-  background: string;
-  foreground: string;
-}
-
 export interface ICalendarEvent {
   id: string;
   summary: string;
@@ -21,20 +15,6 @@ export interface ICalendarEvent {
 export interface IDateRange {
   startDate: Date;
   endDate: Date;
-}
-
-export interface IPanelOptions {
-  isCollapsed: boolean;
-  grandTotal: number;
-  sortedColors: [string, number][];
-  colorMap: Map<string, IColorInfo>;
-  colorIdToRgb: Map<string, string>;
-}
-
-export interface IPanelState {
-  top: number;
-  left: number;
-  collapsed: boolean;
 }
 
 export interface IChromeResponse {

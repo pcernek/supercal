@@ -1,6 +1,5 @@
 import React from 'react';
-import { Panel } from './components/Panel';
-import { IColorInfo } from './types';
+import { IColorInfo, Panel } from './components/Panel';
 
 export const App: React.FC = () => {
   // Dummy data for demonstration
@@ -25,12 +24,8 @@ export const App: React.FC = () => {
     ['4', 'rgb(234, 67, 53)'],   // Red
   ]);
 
-  const dummyGrandTotal = dummyColors.reduce((sum, [_, minutes]) => sum + minutes, 0);
-
   return (
     <Panel
-      isCollapsed={false}
-      grandTotal={dummyGrandTotal}
       sortedColors={dummyColors}
       colorMap={dummyColorMap}
       colorIdToRgb={dummyColorIdToRgb}

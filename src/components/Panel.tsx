@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { IPanelOptions } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAlwaysVisible } from '../hooks/useAlwaysVisible';
@@ -7,11 +6,19 @@ import { PanelHeader } from './PanelHeader';
 import { ColorList } from './ColorList';
 import { LocalStorageKeys } from '../helpers/LocalStorageKeys';
 
-interface IPanelProps extends IPanelOptions {
+export interface IColorInfo {
+  id: string;
+  background: string;
+  foreground: string;
+}
+
+interface IPanelProps {
+  sortedColors: [string, number][];
+  colorMap: Map<string, IColorInfo>;
+  colorIdToRgb: Map<string, string>;
 }
 
 export const Panel: React.FC<IPanelProps> = ({
-  grandTotal,
   sortedColors,
   colorMap,
   colorIdToRgb,
@@ -60,7 +67,6 @@ export const Panel: React.FC<IPanelProps> = ({
           sortedColors={sortedColors}
           colorMap={colorMap}
           colorIdToRgb={colorIdToRgb}
-          grandTotal={grandTotal}
         />
       )}
     </div>
